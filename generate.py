@@ -544,6 +544,10 @@ html = f"""<!DOCTYPE html>
   <button class="pbtn" onclick="setPeriod('12m',this)">12 Bln</button>
   <button class="pbtn" onclick="setPeriod('6m',this)">6 Bln</button>
   <button class="pbtn" onclick="setPeriod('3m',this)">3 Bln</button>
+  <select id="bulanPicker" onchange="setPeriodBulan(this)" style="padding:4px 10px;border-radius:20px;border:1.5px solid rgba(3,69,67,.25);font-size:.75rem;font-weight:600;color:var(--g);background:white;cursor:pointer;font-family:'Raleway',sans-serif;outline:none">
+    <option value="">📅 Pilih Bulan...</option>
+    {''.join(f'<option value="{b}">{b}</option>' for b in bulan_labels)}
+  </select>
   <span id="periodLabel" class="period-badge">Semua {len(bulan_labels)} Bulan</span>
 </div>
 
@@ -921,6 +925,7 @@ function rebuildAllData(rawRows){{
   yrs.forEach(y=>{{const b=document.createElement('button');b.className='pbtn';b.textContent=y;b.onclick=()=>setPeriod(y,b);pbar.insertBefore(b,ref);}});
   allPbtns[0].classList.add('active');
   allPbtns.slice(1).forEach(b=>b.classList.remove('active'));
+  refreshBulanPicker();
 
   applyPeriodFilter(FILTERED_IDX);
   renderStok(STOK_DATA);
@@ -1013,6 +1018,19 @@ function applyPeriodFilter(idx){{
   renderRingkasan(fKatOmzet, fKatProfit, KAT_MONTHLY_HPP.map(m=>idx.reduce((s,i)=>s+m[i],0)));
 }}
 
+function setPeriodBulan(sel){{
+  if(!sel.value)return;
+  document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('active'));
+  const idx=[BULAN.indexOf(sel.value)].filter(i=>i>=0);
+  document.getElementById('periodLabel').textContent=sel.value;
+  applyPeriodFilter(idx);
+}}
+
+function refreshBulanPicker(){{
+  const sel=document.getElementById('bulanPicker');
+  sel.innerHTML='<option value="">📅 Pilih Bulan...</option>'+BULAN.map(b=>`<option value="${{b}}">${{b}}</option>`).join('');
+}}
+
 function setPeriod(mode, btn){{
   document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
@@ -1021,6 +1039,7 @@ function setPeriod(mode, btn){{
     mode==='3m'?'3 Bulan Terakhir':mode==='6m'?'6 Bulan Terakhir':
     mode==='12m'?'12 Bulan Terakhir':mode+' ('+idx.length+' Bln)';
   document.getElementById('periodLabel').textContent = label;
+  document.getElementById('bulanPicker').value = '';
   applyPeriodFilter(idx);
 }}
 
