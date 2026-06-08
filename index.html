@@ -74,7 +74,7 @@
     <div class="header-logo">harmoni <span>· Analitik Penjualan</span></div>
     <div class="sub">Jan-25 – Feb-26 &nbsp;·&nbsp; 14 Bulan Data Aktual</div>
   </div>
-  <div class="badge">Update: 09 Jun 2026 00:24</div>
+  <div class="badge">Update: 09 Jun 2026 01:08</div>
 </div>
 
 <div class="nav">
@@ -96,7 +96,7 @@
     <div class="kpi-card"><div class="kpi-icon">📅</div><div class="kpi-label">Omzet 2025 (12 Bln)</div><div class="kpi-value">Rp —</div><div class="kpi-sub">Rata-rata: Rp —/bln</div></div>
     <div class="kpi-card"><div class="kpi-icon">🏆</div><div class="kpi-label">Bulan Terkuat</div><div class="kpi-value">Jul-25</div><div class="kpi-sub">Rp — omzet</div></div>
     <div class="kpi-card"><div class="kpi-icon">🗂</div><div class="kpi-label">2026 YTD</div><div class="kpi-value">Rp —</div><div class="kpi-sub">2 bulan pertama 2026</div></div>
-    <div class="kpi-card"><div class="kpi-icon">⚠️</div><div class="kpi-label">SKU Margin Negatif</div><div class="kpi-value">27 SKU</div><div class="kpi-sub">Total kerugian: Rp —</div></div>
+    <div class="kpi-card"><div class="kpi-icon">⚠️</div><div class="kpi-label">SKU Margin Negatif</div><div class="kpi-value">26 SKU</div><div class="kpi-sub">Total kerugian: Rp —</div></div>
   </div>
   <div class="chart-grid-3">
     <div class="card"><div class="card-title">📈 Tren Omzet Bulanan</div><div style="position:relative;height:280px"><canvas id="cTren"></canvas></div></div>
@@ -112,7 +112,7 @@
       <li>Jul-25 adalah bulan tertinggi — Rp — omzet (puncak musim sekolah/PASKIBRA).</li>
       <li>Young Harmonis menyumbang <strong>—%</strong> omzet total, Custom Orders —%.</li>
       <li>Custom Orders memiliki margin <strong>100%</strong> (tidak ada HPP tercatat).</li>
-      <li>27 SKU dijual di bawah HPP — total kerugian Rp —.</li>
+      <li>26 SKU dijual di bawah HPP — total kerugian Rp —.</li>
     </ul>
   </div>
 </div>
@@ -124,7 +124,7 @@
     <div class="filter-row">
       <label style="font-size:.82rem;font-weight:500;color:#475569">Kategori:</label>
       <select id="katFilter" onchange="updateKatChart()">
-        <option value="0">PERLENGKAPAN SEKOLAH</option><option value="1">CUSTOM</option><option value="2">PERLENGKAPAN PNS</option><option value="3">PERLENGKAPAN PASKIBRA</option><option value="4">SERAGAM KARNAVAL</option><option value="5">PERLENGKAPAN SECURITY</option><option value="6">PERLENGKAPAN PRAMUKA</option><option value="7">AKSESORIS</option>
+        <option value="0">PERLENGKAPAN SEKOLAH</option><option value="1">PERLENGKAPAN PNS</option><option value="2">PERLENGKAPAN PASKIBRA</option><option value="3">SERAGAM KARNAVAL</option><option value="4">PERLENGKAPAN SECURITY</option><option value="5">PERLENGKAPAN PRAMUKA</option><option value="6">AKSESORIS</option><option value="7">PERLENGKAPAN POLRI</option>
         <option value="99">SEMUA (Total)</option>
       </select>
     </div>
@@ -183,7 +183,7 @@
       <div class="filter-row" style="margin:0;gap:8px">
         <select id="topKatFilter" onchange="filterTopProduk()">
           <option value="">Semua Kategori</option>
-          <option>PERLENGKAPAN SEKOLAH</option><option>CUSTOM</option><option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN PASKIBRA</option><option>SERAGAM KARNAVAL</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN PRAMUKA</option><option>AKSESORIS</option><option>PERLENGKAPAN POLRI</option><option>PERLENGKAPAN TNI</option><option>PERLENGKAPAN POL PP</option><option>SEPATU PDH & PDL</option><option>PERLENGKAPAN PELAYARAN</option><option>PERL. TNI</option><option>PERL. PERBAKIN</option>
+          <option>PERLENGKAPAN SEKOLAH</option><option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN PASKIBRA</option><option>SERAGAM KARNAVAL</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN PRAMUKA</option><option>AKSESORIS</option><option>PERLENGKAPAN POLRI</option><option>PERLENGKAPAN TNI</option><option>PERLENGKAPAN POL PP</option><option>SEPATU PDH & PDL</option><option>PERLENGKAPAN PELAYARAN</option><option>PERL. TNI</option><option>PERL. PERBAKIN</option>
         </select>
         <select id="topSortFilter" onchange="filterTopProduk()">
           <option value="omzet">Urutkan: Omzet</option>
@@ -205,17 +205,17 @@
   <div class="insight-box" style="background:#fff7ed;border-color:#ea580c;color:#9a3412">
     <strong>⚠️ Ringkasan Masalah</strong>
     <ul>
-      <li>27 SKU dengan profit <strong>negatif</strong> — dijual di bawah HPP. Total kerugian: <strong>Rp —</strong></li>
+      <li>26 SKU dengan profit <strong>negatif</strong> — dijual di bawah HPP. Total kerugian: <strong>Rp —</strong></li>
       <li>Perlu evaluasi harga jual, pengecekan HPP, atau pertimbangan discontinue produk.</li>
     </ul>
   </div>
   <div class="card card-full">
     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-      <span>🔴 SKU dengan Profit Negatif (27 SKU)</span>
+      <span>🔴 SKU dengan Profit Negatif (26 SKU)</span>
       <div class="filter-row" style="margin:0">
         <select id="masFilter" onchange="filterMasalah()">
           <option value="">Semua Kategori</option>
-          <option>AKSESORIS</option><option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN POLRI</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN SEKOLAH</option><option>SERAGAM KARNAVAL</option>
+          <option>AKSESORIS</option><option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN SEKOLAH</option><option>SERAGAM KARNAVAL</option>
         </select>
       </div>
     </div>
@@ -270,17 +270,17 @@
 </div>
 
 </div>
-<div class="gen-info">Generated by generate_harmoni_app.py · 09 Jun 2026 00:24</div>
+<div class="gen-info">Generated by generate_harmoni_app.py · 09 Jun 2026 01:08</div>
 
 <script>
 const BULAN = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Jul-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
 const TOTAL_BULANAN = [];
 const YH_OMZET = [];
 const YH_PROFIT = [];
-const YH_MARGIN = [42.45, 41.41, 27.58, 43.08, 41.19, 41.34, 39.73, 38.4, 40.21, 42.44, 40.07, 38.44, 38.7, 40.26, 0, 0, 0, 0, 0];
-const CUST_OMZET = [];
-const KONTR_YH = [60.53, 62.73, 52.71, 68.34, 73.78, 70.73, 81.87, 84.6, 63.01, 71.97, 74.53, 70.84, 71.73, 48.85, 0, 0, 0, 0, 0];
-const KAT_NAMES = ["PERLENGKAPAN SEKOLAH", "CUSTOM", "PERLENGKAPAN PNS", "PERLENGKAPAN PASKIBRA", "SERAGAM KARNAVAL", "PERLENGKAPAN SECURITY", "PERLENGKAPAN PRAMUKA", "AKSESORIS"];
+const YH_MARGIN = [42.41, 41.4, 27.38, 43.08, 41.19, 41.34, 39.73, 38.4, 40.21, 42.44, 40.07, 38.44, 38.7, 40.26];
+const CUST_OMZET = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+const KONTR_YH = [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0];
+const KAT_NAMES = ["PERLENGKAPAN SEKOLAH", "PERLENGKAPAN PNS", "PERLENGKAPAN PASKIBRA", "SERAGAM KARNAVAL", "PERLENGKAPAN SECURITY", "PERLENGKAPAN PRAMUKA", "AKSESORIS", "PERLENGKAPAN POLRI"];
 const KAT_MONTHLY = [];
 const RINGKASAN = [];
 const DIVISI_DATA = [];
