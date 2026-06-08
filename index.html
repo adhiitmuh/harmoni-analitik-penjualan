@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harmoni Analitik</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{--g:#034543;--g2:#055a57;--g3:#0a7874;--g4:#1a8b88;--beige:#FFFBD5;--beige2:#f5f0b8;--white:#FAFAFA;--black:#282828;--gray:#64748b}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Raleway',sans-serif;background:var(--white);color:var(--black)}
+  .header{background:linear-gradient(135deg,var(--g) 0%,var(--g2) 50%,var(--g3) 100%);color:white;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(3,69,67,.3)}
+  .header-logo{font-size:1.6rem;font-weight:800;color:white;letter-spacing:-.5px;line-height:1}
+  .header-logo span{font-size:.8rem;font-weight:400;opacity:.7;margin-left:4px}
+  .header .sub{font-size:.75rem;opacity:.6;margin-top:3px;font-weight:500}
+  .header .badge{background:rgba(255,251,213,.18);border:1px solid rgba(255,251,213,.3);padding:4px 14px;border-radius:20px;font-size:.73rem;color:var(--beige)}
+  .nav{background:white;border-bottom:2px solid rgba(3,69,67,.08);padding:0 24px;display:flex;gap:0;overflow-x:auto}
+  .nav-btn{padding:13px 19px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:#94a3b8;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;font-family:'Raleway',sans-serif}
+  .nav-btn:hover{color:var(--g)}
+  .nav-btn.active{color:var(--g);border-bottom-color:var(--g);font-weight:700}
+  .main{padding:22px;max-width:1400px;margin:0 auto}
+  .tab-content{display:none}.tab-content.active{display:block}
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:22px}
+  .kpi-card{background:white;border-radius:14px;padding:20px;box-shadow:0 1px 8px rgba(3,69,67,.08);border:1px solid rgba(3,69,67,.08);position:relative;overflow:hidden}
+  .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--g),var(--g4))}
+  .kpi-icon{font-size:1.3rem;margin-bottom:7px}
+  .kpi-label{font-size:.68rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+  .kpi-value{font-size:1.5rem;font-weight:800;color:var(--g);line-height:1}
+  .kpi-sub{font-size:.68rem;color:var(--gray);margin-top:5px;font-weight:500}
+  .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px}
+  .chart-grid-3{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:22px}
+  @media(max-width:900px){.chart-grid,.chart-grid-3{grid-template-columns:1fr}}
+  .card{background:white;border-radius:14px;padding:20px;box-shadow:0 1px 8px rgba(3,69,67,.08);border:1px solid rgba(3,69,67,.08)}
+  .card-title{font-size:.88rem;font-weight:700;color:var(--black);margin-bottom:14px;padding-bottom:11px;border-bottom:1px solid rgba(3,69,67,.08);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .card-full{margin-bottom:22px}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.8rem}
+  th{background:linear-gradient(180deg,#f5fffe,#edf9f8);padding:10px 12px;text-align:left;font-weight:700;color:var(--g);font-size:.72rem;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid rgba(3,69,67,.12);white-space:nowrap}
+  td{padding:10px 12px;border-bottom:1px solid rgba(3,69,67,.06);color:var(--black)}
+  tr:hover td{background:rgba(255,251,213,.35)}
+  .tr{text-align:right;font-family:'SF Mono',monospace}
+  .tc{text-align:center}
+  .badge-red{background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:5px;font-size:.7rem;font-weight:700}
+  .badge-orange{background:#ffedd5;color:#c2410c;padding:2px 8px;border-radius:5px;font-size:.7rem;font-weight:700}
+  .badge-yellow{background:var(--beige);color:#854d0e;padding:2px 8px;border-radius:5px;font-size:.7rem;font-weight:700}
+  .badge-green{background:rgba(3,69,67,.1);color:var(--g);padding:2px 8px;border-radius:5px;font-size:.7rem;font-weight:700}
+  .badge-blue{background:rgba(3,69,67,.08);color:var(--g);padding:2px 8px;border-radius:5px;font-size:.7rem;font-weight:700}
+  .mbar-wrap{display:flex;align-items:center;gap:8px}
+  .mbar-bg{flex:1;background:rgba(3,69,67,.1);border-radius:4px;height:5px;min-width:50px}
+  .mbar-fill{height:5px;border-radius:4px}
+  .insight-box{background:linear-gradient(135deg,rgba(3,69,67,.06),rgba(255,251,213,.4));border-left:4px solid var(--g);border-radius:0 10px 10px 0;padding:12px 16px;margin-bottom:20px;font-size:.82rem;color:var(--g)}
+  .insight-box ul{padding-left:16px;margin-top:6px}
+  .insight-box li{margin-bottom:4px}
+  .insight-warn{background:linear-gradient(135deg,#fff7ed,#ffedd5);border-color:#ea580c;color:#9a3412}
+  .divisi-stat{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+  .div-block{flex:1;min-width:220px;padding:16px;border-radius:12px}
+  .div-yh{background:linear-gradient(135deg,rgba(3,69,67,.07),rgba(3,69,67,.03));border:1px solid rgba(3,69,67,.18)}
+  .div-cust{background:linear-gradient(135deg,var(--beige),var(--beige2));border:1px solid rgba(3,69,67,.15)}
+  .div-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;color:var(--g)}
+  .div-val{font-size:1.3rem;font-weight:800;color:var(--g)}
+  .div-sub{font-size:.72rem;color:var(--gray);margin-top:4px;font-weight:500}
+  .filter-row{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .filter-row select,.filter-row input{padding:6px 11px;border:1px solid rgba(3,69,67,.2);border-radius:7px;font-size:.8rem;background:white;color:var(--black);cursor:pointer;font-family:'Raleway',sans-serif;outline:none}
+  .filter-row select:focus{border-color:var(--g)}
+  .bRek{background:linear-gradient(135deg,var(--beige),var(--beige2));color:var(--g);padding:3px 10px;border-radius:6px;font-weight:800;font-size:.8rem;border:1px solid rgba(3,69,67,.15)}
+  .gen-info{text-align:right;font-size:.7rem;color:#94a3b8;padding:6px 24px 16px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-logo">harmoni <span>· Analitik Penjualan</span></div>
+    <div class="sub">Jan-25 – Feb-26 &nbsp;·&nbsp; 14 Bulan Data Aktual</div>
+  </div>
+  <div class="badge">Update: 09 Jun 2026 00:24</div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showTab('dashboard',this)">📊 Dashboard</button>
+  <button class="nav-btn" onclick="showTab('kategori',this)">📂 Per Kategori</button>
+  <button class="nav-btn" onclick="showTab('divisi',this)">🏢 Analisis Divisi</button>
+  <button class="nav-btn" onclick="showTab('produk',this)">🏆 Top Produk</button>
+  <button class="nav-btn" onclick="showTab('masalah',this)">🚨 Analisis Masalah</button>
+  <button class="nav-btn" onclick="showTab('stok',this)">📦 Stok & Rekomendasi</button>
+</div>
+
+<div class="main">
+
+<!-- DASHBOARD -->
+<div id="tab-dashboard" class="tab-content active">
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-icon">💰</div><div class="kpi-label">Total Omzet (14 Bln)</div><div class="kpi-value">Rp —</div><div class="kpi-sub">Jan-25 – Feb-26</div></div>
+    <div class="kpi-card"><div class="kpi-icon">📈</div><div class="kpi-label">Total Profit</div><div class="kpi-value">Rp —</div><div class="kpi-sub">Margin rata-rata: —%</div></div>
+    <div class="kpi-card"><div class="kpi-icon">📅</div><div class="kpi-label">Omzet 2025 (12 Bln)</div><div class="kpi-value">Rp —</div><div class="kpi-sub">Rata-rata: Rp —/bln</div></div>
+    <div class="kpi-card"><div class="kpi-icon">🏆</div><div class="kpi-label">Bulan Terkuat</div><div class="kpi-value">Jul-25</div><div class="kpi-sub">Rp — omzet</div></div>
+    <div class="kpi-card"><div class="kpi-icon">🗂</div><div class="kpi-label">2026 YTD</div><div class="kpi-value">Rp —</div><div class="kpi-sub">2 bulan pertama 2026</div></div>
+    <div class="kpi-card"><div class="kpi-icon">⚠️</div><div class="kpi-label">SKU Margin Negatif</div><div class="kpi-value">27 SKU</div><div class="kpi-sub">Total kerugian: Rp —</div></div>
+  </div>
+  <div class="chart-grid-3">
+    <div class="card"><div class="card-title">📈 Tren Omzet Bulanan</div><div style="position:relative;height:280px"><canvas id="cTren"></canvas></div></div>
+    <div class="card"><div class="card-title">🍩 Distribusi Omzet Per Kategori</div><div style="position:relative;height:280px"><canvas id="cDonut"></canvas></div></div>
+  </div>
+  <div class="chart-grid">
+    <div class="card"><div class="card-title">💼 Young Harmonis vs Custom Orders</div><div style="position:relative;height:240px"><canvas id="cDivisiBar"></canvas></div></div>
+    <div class="card"><div class="card-title">📊 Omzet Per Kategori Utama</div><div style="position:relative;height:240px"><canvas id="cKatBar"></canvas></div></div>
+  </div>
+  <div class="insight-box">
+    <strong>📌 Insight Kunci</strong>
+    <ul>
+      <li>Jul-25 adalah bulan tertinggi — Rp — omzet (puncak musim sekolah/PASKIBRA).</li>
+      <li>Young Harmonis menyumbang <strong>—%</strong> omzet total, Custom Orders —%.</li>
+      <li>Custom Orders memiliki margin <strong>100%</strong> (tidak ada HPP tercatat).</li>
+      <li>27 SKU dijual di bawah HPP — total kerugian Rp —.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- PER KATEGORI -->
+<div id="tab-kategori" class="tab-content">
+  <div class="card card-full">
+    <div class="card-title">📊 Tren Omzet Per Kategori</div>
+    <div class="filter-row">
+      <label style="font-size:.82rem;font-weight:500;color:#475569">Kategori:</label>
+      <select id="katFilter" onchange="updateKatChart()">
+        <option value="0">PERLENGKAPAN SEKOLAH</option><option value="1">CUSTOM</option><option value="2">PERLENGKAPAN PNS</option><option value="3">PERLENGKAPAN PASKIBRA</option><option value="4">SERAGAM KARNAVAL</option><option value="5">PERLENGKAPAN SECURITY</option><option value="6">PERLENGKAPAN PRAMUKA</option><option value="7">AKSESORIS</option>
+        <option value="99">SEMUA (Total)</option>
+      </select>
+    </div>
+    <div style="position:relative;height:260px"><canvas id="cKatLine"></canvas></div>
+  </div>
+  <div class="card card-full">
+    <div class="card-title">📋 Ringkasan Total Per Kategori</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>No</th><th>Kategori</th><th>Divisi</th><th class="tr">Total Omzet</th><th class="tr">Total HPP</th><th class="tr">Total Profit</th><th>Margin</th><th class="tr">Markup</th></tr></thead>
+      <tbody id="tbKat"></tbody>
+      <tfoot><tr style="font-weight:700;background:#f8fafc">
+        <td colspan="3" style="padding:10px 12px">GRAND TOTAL</td>
+        <td class="tr" style="padding:10px 12px">Rp —</td>
+        <td class="tr" style="padding:10px 12px">Rp —</td>
+        <td class="tr" style="padding:10px 12px">Rp —</td>
+        <td style="padding:10px 12px"><span class="badge-green">—%</span></td>
+        <td class="tr" style="padding:10px 12px">—%</td>
+      </tr></tfoot>
+    </table></div>
+  </div>
+</div>
+
+<!-- ANALISIS DIVISI -->
+<div id="tab-divisi" class="tab-content">
+  <div class="divisi-stat">
+    <div class="div-block div-yh">
+      <div class="div-label">🔵 Young Harmonis</div>
+      <div class="div-val">Rp —</div>
+      <div class="div-sub">—% dari total omzet · Profit Rp — · Margin —%</div>
+    </div>
+    <div class="div-block div-cust">
+      <div class="div-label">🟢 Custom Orders</div>
+      <div class="div-val">Rp —</div>
+      <div class="div-sub">—% dari total omzet · Profit Rp — · Margin 100%</div>
+    </div>
+  </div>
+  <div class="card card-full"><div class="card-title">📈 Tren Bulanan — YH vs Custom</div><div style="position:relative;height:280px"><canvas id="cDivisiLine"></canvas></div></div>
+  <div class="card card-full">
+    <div class="card-title">📋 Detail Per Bulan</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Bulan</th><th class="tr">YH Omzet</th><th class="tr">YH Profit</th><th>YH Margin</th><th class="tr">Custom Omzet</th><th class="tr">Custom Profit</th><th class="tr">Kontr. YH</th><th class="tr">Kontr. Custom</th></tr></thead>
+      <tbody id="tbDiv"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- TOP PRODUK -->
+<div id="tab-produk" class="tab-content">
+  <div class="chart-grid">
+    <div class="card"><div class="card-title">🏆 Top 10 — Omzet Tertinggi</div><div style="position:relative;height:320px"><canvas id="cTopOmzet"></canvas></div></div>
+    <div class="card"><div class="card-title">📊 Top 10 — Margin Tertinggi</div><div style="position:relative;height:320px"><canvas id="cTopMargin"></canvas></div></div>
+  </div>
+  <div class="card card-full">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>📋 Top 50 Produk Terlaris</span>
+      <div class="filter-row" style="margin:0;gap:8px">
+        <select id="topKatFilter" onchange="filterTopProduk()">
+          <option value="">Semua Kategori</option>
+          <option>PERLENGKAPAN SEKOLAH</option><option>CUSTOM</option><option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN PASKIBRA</option><option>SERAGAM KARNAVAL</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN PRAMUKA</option><option>AKSESORIS</option><option>PERLENGKAPAN POLRI</option><option>PERLENGKAPAN TNI</option><option>PERLENGKAPAN POL PP</option><option>SEPATU PDH & PDL</option><option>PERLENGKAPAN PELAYARAN</option><option>PERL. TNI</option><option>PERL. PERBAKIN</option>
+        </select>
+        <select id="topSortFilter" onchange="filterTopProduk()">
+          <option value="omzet">Urutkan: Omzet</option>
+          <option value="qty">Urutkan: Qty Terjual</option>
+          <option value="profit">Urutkan: Profit</option>
+          <option value="margin">Urutkan: Margin</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>No</th><th>Produk</th><th>Varian</th><th>Kategori</th><th class="tr">Total Omzet</th><th class="tr">Total Qty</th><th class="tr">Total Profit</th><th>Margin</th></tr></thead>
+      <tbody id="tbTop"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ANALISIS MASALAH -->
+<div id="tab-masalah" class="tab-content">
+  <div class="insight-box" style="background:#fff7ed;border-color:#ea580c;color:#9a3412">
+    <strong>⚠️ Ringkasan Masalah</strong>
+    <ul>
+      <li>27 SKU dengan profit <strong>negatif</strong> — dijual di bawah HPP. Total kerugian: <strong>Rp —</strong></li>
+      <li>Perlu evaluasi harga jual, pengecekan HPP, atau pertimbangan discontinue produk.</li>
+    </ul>
+  </div>
+  <div class="card card-full">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>🔴 SKU dengan Profit Negatif (27 SKU)</span>
+      <div class="filter-row" style="margin:0">
+        <select id="masFilter" onchange="filterMasalah()">
+          <option value="">Semua Kategori</option>
+          <option>AKSESORIS</option><option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN POLRI</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN SEKOLAH</option><option>SERAGAM KARNAVAL</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>No</th><th>SKU</th><th>Kategori</th><th>Produk</th><th>Varian</th><th>Bulan</th><th class="tr">Qty</th><th class="tr">Omzet</th><th class="tr">HPP</th><th class="tr">Profit</th><th class="tr">Margin</th><th>Status</th><th>Rekomendasi</th></tr></thead>
+      <tbody id="tbMas"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- STOK & REKOMENDASI -->
+<div id="tab-stok" class="tab-content">
+  <div class="insight-box">
+    <strong>📦 Cara Baca Rekomendasi Stok</strong>
+    <ul>
+      <li>Rekomendasi dihitung dari rata-rata 3 bulan terakhir (Des-25, Jan-26, Feb-26) + buffer tren.</li>
+      <li><strong>Naik ↑</strong> = penjualan tumbuh &gt;20% dibanding 3 bulan sebelumnya → sediakan 30% lebih banyak.</li>
+      <li><strong>Stabil →</strong> = perubahan ±20% → buffer 10% dari rata-rata recent.</li>
+      <li><strong>Turun ↓</strong> = penjualan turun &gt;20% → kurangi 10% dari rata-rata recent.</li>
+      <li>Filter per kategori, atau cari produk di kotak pencarian.</li>
+    </ul>
+  </div>
+  <div class="card card-full">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <span>📦 Rekomendasi Stok Per SKU</span>
+      <div class="filter-row" style="margin:0;gap:8px">
+        <input id="stokSearch" type="text" placeholder="Cari produk..." oninput="filterStok()" style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.82rem;width:200px">
+        <select id="stokKatFilter" onchange="filterStok()">
+          <option value="">Semua Kategori</option>
+          <option>PERLENGKAPAN SEKOLAH</option><option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN PASKIBRA</option><option>SERAGAM KARNAVAL</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN PRAMUKA</option><option>AKSESORIS</option><option>PERLENGKAPAN POLRI</option><option>PERLENGKAPAN TNI</option><option>PERLENGKAPAN POL PP</option><option>SEPATU PDH & PDL</option><option>PERLENGKAPAN PELAYARAN</option><option>PERL. TNI</option><option>PERL. PERBAKIN</option>
+        </select>
+        <select id="stokTrendFilter" onchange="filterStok()">
+          <option value="">Semua Tren</option>
+          <option value="naik">📈 Tren Naik</option>
+          <option value="stabil">➡️ Tren Stabil</option>
+          <option value="turun">📉 Tren Turun</option>
+        </select>
+      </div>
+    </div>
+    <div id="stokCount" style="font-size:.78rem;color:#64748b;margin-bottom:10px"></div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>No</th><th>SKU</th><th>Produk</th><th>Varian</th><th>Kategori</th>
+        <th class="tr">Total Qty (14Bln)</th><th class="tr">Avg/Bln</th>
+        <th class="tr">Avg 3Bln Terakhir</th><th>Tren</th><th>Tren %</th>
+        <th class="tr" style="background:#fef9c3;color:#854d0e">Rek. Stok</th>
+        <th>Terakhir Terjual</th>
+      </tr></thead>
+      <tbody id="tbStok"></tbody>
+    </table></div>
+  </div>
+</div>
+
+</div>
+<div class="gen-info">Generated by generate_harmoni_app.py · 09 Jun 2026 00:24</div>
+
+<script>
+const BULAN = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Jul-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
+const TOTAL_BULANAN = [];
+const YH_OMZET = [];
+const YH_PROFIT = [];
+const YH_MARGIN = [42.45, 41.41, 27.58, 43.08, 41.19, 41.34, 39.73, 38.4, 40.21, 42.44, 40.07, 38.44, 38.7, 40.26, 0, 0, 0, 0, 0];
+const CUST_OMZET = [];
+const KONTR_YH = [60.53, 62.73, 52.71, 68.34, 73.78, 70.73, 81.87, 84.6, 63.01, 71.97, 74.53, 70.84, 71.73, 48.85, 0, 0, 0, 0, 0];
+const KAT_NAMES = ["PERLENGKAPAN SEKOLAH", "CUSTOM", "PERLENGKAPAN PNS", "PERLENGKAPAN PASKIBRA", "SERAGAM KARNAVAL", "PERLENGKAPAN SECURITY", "PERLENGKAPAN PRAMUKA", "AKSESORIS"];
+const KAT_MONTHLY = [];
+const RINGKASAN = [];
+const DIVISI_DATA = [];
+const TOP_PRODUK = [];
+const MASALAH_SKU = [];
+const STOK_DATA = [];
+const BULAN_ORDER = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Jul-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
+
+const COLORS = ['#034543','#1a8b88','#2eb8b4','#c2a000','#ea580c','#7c3aed','#dc2626','#d97706'];
+
+Chart.defaults.font.family="'Raleway',-apple-system,BlinkMacSystemFont,sans-serif";
+Chart.defaults.font.size=11;
+
+function fmtRp(v){
+  if(v==null||v===0)return '—';
+  return 'Rp '+Math.round(v).toLocaleString('id-ID');
+}
+function fmtM(v){
+  if(v>=1e9)return 'Rp '+(v/1e9).toFixed(2)+' M';
+  if(v>=1e6)return 'Rp '+(v/1e6).toFixed(1)+' Jt';
+  return 'Rp '+Math.round(v).toLocaleString('id-ID');
+}
+function pct(v,d=1){return v.toFixed(d)+'%';}
+function mBadge(m){
+  if(m>=60)return`<span class="badge-green">${pct(m)}</span>`;
+  if(m>=40)return`<span class="badge-blue">${pct(m)}</span>`;
+  if(m>=25)return`<span class="badge-yellow">${pct(m)}</span>`;
+  return`<span class="badge-red">${pct(m)}</span>`;
+}
+function mBar(m,max=100){
+  const p=Math.min(Math.max(m,0),max)/max*100;
+  const c=m<25?'#ef4444':m<40?'#f59e0b':m<60?'#034543':'#22c55e';
+  return`<div class="mbar-wrap">${mBadge(m)}<div class="mbar-bg"><div class="mbar-fill" style="width:${p}%;background:${c}"></div></div></div>`;
+}
+
+function showTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// Charts
+new Chart(document.getElementById('cTren'),{type:'line',data:{labels:BULAN,datasets:[{label:'Total Omzet',data:TOTAL_BULANAN,borderColor:'#034543',backgroundColor:'rgba(3,69,67,.08)',fill:true,tension:.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{y:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}}});
+new Chart(document.getElementById('cDonut'),{type:'doughnut',data:{labels:RINGKASAN.slice(0,6).map(r=>r.nama.replace('PERLENGKAPAN ','').replace('SERAGAM ','')),datasets:[{data:RINGKASAN.slice(0,6).map(r=>r.omzet),backgroundColor:COLORS,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},padding:10}},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},cutout:'60%'}});
+new Chart(document.getElementById('cDivisiBar'),{type:'bar',data:{labels:BULAN,datasets:[{label:'Young Harmonis',data:YH_OMZET,backgroundColor:'rgba(3,69,67,.85)',borderRadius:4},{label:'Custom Orders',data:CUST_OMZET,backgroundColor:'rgba(194,160,0,.8)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}}}}});
+new Chart(document.getElementById('cKatBar'),{type:'bar',indexAxis:'y',data:{labels:RINGKASAN.slice(0,6).map(r=>r.nama.length>18?r.nama.slice(0,18)+'…':r.nama),datasets:[{label:'Omzet',data:RINGKASAN.slice(0,6).map(r=>r.omzet),backgroundColor:COLORS,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},y:{grid:{display:false}}}}});
+new Chart(document.getElementById('cDivisiLine'),{type:'line',data:{labels:BULAN,datasets:[{label:'Young Harmonis',data:YH_OMZET,borderColor:'#034543',backgroundColor:'rgba(3,69,67,.08)',fill:true,tension:.4,pointRadius:4},{label:'Custom Orders',data:CUST_OMZET,borderColor:'#c2a000',backgroundColor:'rgba(194,160,0,.07)',fill:true,tension:.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{y:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}}});
+
+const top10=TOP_PRODUK.slice(0,10);
+new Chart(document.getElementById('cTopOmzet'),{type:'bar',indexAxis:'y',data:{labels:top10.map(p=>p.produk.length>20?p.produk.slice(0,20)+'…':p.produk),datasets:[{label:'Omzet',data:top10.map(p=>p.omzet),backgroundColor:'#034543',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+const topMar=[...TOP_PRODUK].sort((a,b)=>b.margin-a.margin).slice(0,10);
+new Chart(document.getElementById('cTopMargin'),{type:'bar',indexAxis:'y',data:{labels:topMar.map(p=>p.produk.length>20?p.produk.slice(0,20)+'…':p.produk),datasets:[{label:'Margin%',data:topMar.map(p=>p.margin),backgroundColor:'#1a8b88',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.raw.toFixed(1)+'%'}}},scales:{x:{ticks:{callback:v=>v+'%'},max:110,grid:{color:'#f1f5f9'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+
+let cKatLine=new Chart(document.getElementById('cKatLine'),{type:'line',data:{labels:BULAN,datasets:[{label:KAT_NAMES[0],data:KAT_MONTHLY[0],borderColor:COLORS[0],backgroundColor:'rgba(3,69,67,.08)',fill:true,tension:.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{y:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}}});
+
+function updateKatChart(){
+  const idx=parseInt(document.getElementById('katFilter').value);
+  if(idx===99){
+    cKatLine.data.datasets=KAT_NAMES.map((nm,i)=>({label:nm.replace('PERLENGKAPAN ','').replace('SERAGAM ',''),data:KAT_MONTHLY[i],borderColor:COLORS[i],backgroundColor:'transparent',tension:.4,pointRadius:2}));
+  }else{
+    cKatLine.data.datasets=[{label:KAT_NAMES[idx],data:KAT_MONTHLY[idx],borderColor:COLORS[idx],backgroundColor:COLORS[idx]+'18',fill:true,tension:.4,pointRadius:4}];
+  }
+  cKatLine.update();
+}
+
+// Tables
+const tbKat=document.getElementById('tbKat');
+RINGKASAN.forEach(r=>{
+  tbKat.innerHTML+=`<tr><td class="tc">${r.no}</td><td><strong>${r.nama}</strong></td><td><span class="badge-blue">${r.divisi||'—'}</span></td><td class="tr">${fmtRp(r.omzet)}</td><td class="tr">${r.hpp?fmtRp(r.hpp):'—'}</td><td class="tr">${fmtRp(r.profit)}</td><td>${mBar(r.margin)}</td><td class="tr">${r.markup?pct(r.markup):'—'}</td></tr>`;
+});
+
+const tbDiv=document.getElementById('tbDiv');
+DIVISI_DATA.forEach(d=>{
+  tbDiv.innerHTML+=`<tr><td><strong>${d.bulan}</strong></td><td class="tr">${fmtRp(d.yh_omzet)}</td><td class="tr">${fmtRp(d.yh_profit)}</td><td>${mBadge(d.yh_margin)}</td><td class="tr">${fmtRp(d.cust_omzet)}</td><td class="tr">${fmtRp(d.cust_omzet)}</td><td class="tr">${pct(d.kontr_yh)}</td><td class="tr">${pct(100-d.kontr_yh)}</td></tr>`;
+});
+
+function renderTopProduk(data){
+  const tb=document.getElementById('tbTop');
+  tb.innerHTML='';
+  data.forEach((p,i)=>{
+    tb.innerHTML+=`<tr><td class="tc">${i+1}</td><td><strong>${p.produk}</strong></td><td>${p.varian}</td><td><span class="badge-blue" style="font-size:.68rem">${p.kategori.replace('PERLENGKAPAN ','')}</span></td><td class="tr">${fmtRp(p.omzet)}</td><td class="tr" style="font-weight:600">${p.qty.toLocaleString('id-ID')}</td><td class="tr">${fmtRp(p.profit)}</td><td>${mBar(p.margin)}</td></tr>`;
+  });
+}
+renderTopProduk(TOP_PRODUK);
+
+function filterTopProduk(){
+  const kat=document.getElementById('topKatFilter').value;
+  const sort=document.getElementById('topSortFilter').value;
+  let d=[...TOP_PRODUK];
+  if(kat)d=d.filter(p=>p.kategori===kat);
+  d.sort((a,b)=>b[sort]-a[sort]);
+  renderTopProduk(d);
+}
+
+function renderMas(data){
+  const tb=document.getElementById('tbMas');
+  tb.innerHTML='';
+  data.forEach(m=>{
+    const sc=m.status.includes('Kritis')?'badge-red':m.status.includes('Perhatian')?'badge-orange':'badge-yellow';
+    tb.innerHTML+=`<tr><td class="tc">${m.no}</td><td><code style="font-size:.78rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${m.sku}</code></td><td><span class="badge-blue" style="font-size:.68rem">${m.kat.replace('PERLENGKAPAN ','')}</span></td><td>${m.produk}</td><td>${m.varian}</td><td>${m.bulan}</td><td class="tr">${m.qty}</td><td class="tr">${fmtRp(m.omzet)}</td><td class="tr">${fmtRp(m.hpp)}</td><td class="tr" style="color:#dc2626;font-weight:600">-${fmtRp(Math.abs(m.profit))}</td><td class="tr" style="color:#dc2626">${m.margin.toFixed(1)}%</td><td><span class="${sc}">${m.status}</span></td><td style="font-size:.78rem;color:#64748b">${m.rek}</td></tr>`;
+  });
+}
+renderMas(MASALAH_SKU);
+function filterMasalah(){
+  const v=document.getElementById('masFilter').value;
+  renderMas(v?MASALAH_SKU.filter(m=>m.kat===v):MASALAH_SKU);
+}
+
+function trendBadge(t,pct){
+  if(t==='naik')return`<span class="badge-green">📈 Naik</span>`;
+  if(t==='turun')return`<span class="badge-red">📉 Turun</span>`;
+  return`<span class="badge-yellow">➡️ Stabil</span>`;
+}
+function rekBadge(qty){
+  return`<span style="background:#fef9c3;color:#854d0e;padding:3px 10px;border-radius:6px;font-weight:700;font-size:.82rem">${qty} pcs</span>`;
+}
+
+function renderStok(data){
+  const tb=document.getElementById('tbStok');
+  const cnt=document.getElementById('stokCount');
+  tb.innerHTML='';
+  cnt.textContent=data.length+' produk ditampilkan';
+  data.forEach((s,i)=>{
+    const tpct=s.trend_pct>0?'+'+s.trend_pct.toFixed(0)+'%':s.trend_pct.toFixed(0)+'%';
+    const tcolor=s.trend==='naik'?'#15803d':s.trend==='turun'?'#dc2626':'#854d0e';
+    tb.innerHTML+=`<tr>
+      <td class="tc">${i+1}</td>
+      <td><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${s.sku}</code></td>
+      <td><strong>${s.produk}</strong></td>
+      <td>${s.varian}</td>
+      <td><span class="badge-blue" style="font-size:.68rem">${s.kategori.replace('PERLENGKAPAN ','')}</span></td>
+      <td class="tr" style="font-weight:600">${s.total_qty.toLocaleString('id-ID')}</td>
+      <td class="tr">${s.avg_per_bulan}</td>
+      <td class="tr">${s.recent3_avg}</td>
+      <td>${trendBadge(s.trend)}</td>
+      <td class="tr" style="color:${tcolor};font-weight:600">${tpct}</td>
+      <td class="tc">${rekBadge(s.rek_qty)}</td>
+      <td class="tc" style="font-size:.78rem;color:#64748b">${s.last_sold||'—'}</td>
+    </tr>`;
+  });
+}
+renderStok(STOK_DATA);
+
+function filterStok(){
+  const q=document.getElementById('stokSearch').value.toLowerCase();
+  const kat=document.getElementById('stokKatFilter').value;
+  const trend=document.getElementById('stokTrendFilter').value;
+  let d=STOK_DATA.filter(s=>{
+    if(q&&!s.produk.toLowerCase().includes(q)&&!s.sku.toLowerCase().includes(q)&&!s.varian.toLowerCase().includes(q))return false;
+    if(kat&&s.kategori!==kat)return false;
+    if(trend&&s.trend!==trend)return false;
+    return true;
+  });
+  renderStok(d);
+}
+</script>
+</body>
+</html>
