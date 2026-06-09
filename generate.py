@@ -142,7 +142,12 @@ else:
         bulan = safe_str(row[0])
         if not bulan: continue
         sku = safe_str(row[5])
-        if not sku: continue
+        if not sku:
+            # CUSTOM rows tidak punya SKU individual — pakai synthetic key
+            if safe_str(row[2]).upper() == 'CUSTOM':
+                sku = 'CUSTOM'
+            else:
+                continue
         qty = int(safe_num(row[6]))
         omzet  = safe_num(row[10])
         hpp    = safe_num(row[11])
@@ -299,6 +304,7 @@ for r in raw_rows:
 
 masalah_raw = []
 for sku, bulan_dict in sku_bulan_agg.items():
+    if sku == 'CUSTOM': continue
     meta = sku_meta[sku]
     for bulan, vals in bulan_dict.items():
         if vals['omzet'] > 0 and vals['profit'] < 0:
@@ -332,6 +338,7 @@ for r in raw_rows:
 
 stok_rekomendasi = []
 for sku, qty_per_bulan in sku_monthly_qty.items():
+    if sku == 'CUSTOM': continue  # custom orders tidak bisa di-stok
     info = sku_info[sku]
     total_qty = sum(qty_per_bulan)
     months_active = sum(1 for q in qty_per_bulan if q > 0)
