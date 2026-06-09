@@ -82,7 +82,7 @@
     <div class="sub">Jan-25 – Feb-26 &nbsp;·&nbsp; 14 Bulan Data Aktual</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-    <div class="badge">Update: 09 Jun 2026 21:25</div>
+    <div class="badge">Update: 09 Jun 2026 21:59</div>
     <label id="uploadBtn" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;padding:5px 14px;border-radius:20px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:'Raleway',sans-serif;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.25)'" onmouseout="this.style.background='rgba(255,255,255,.15)'">
       📤 Perbarui Data
       <input type="file" id="olseraInput" accept=".xlsx" multiple style="display:none" onchange="handleOlseraUpload(this.files)">
@@ -269,10 +269,23 @@
   <div class="card card-full">
     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
       <span>📦 Rekomendasi Stok Per SKU</span>
-      <div class="filter-row" style="margin:0;gap:8px">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px">
+        <input type="file" id="stokTokoInput" accept=".xlsx" style="display:none" onchange="uploadStokFisik(this.files,'toko')">
+        <input type="file" id="stokGudangInput" accept=".xlsx" style="display:none" onchange="uploadStokFisik(this.files,'gudang')">
+        <button onclick="document.getElementById('stokTokoInput').click()" style="padding:6px 14px;background:#0369a1;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">🏪 Upload Stok Toko</button>
+        <button onclick="document.getElementById('stokGudangInput').click()" style="padding:6px 14px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">🏭 Upload Stok Gudang</button>
+        <span id="stokTokoLabel" style="font-size:.75rem;color:#0369a1;font-weight:600"></span>
+        <span id="stokGudangLabel" style="font-size:.75rem;color:#7c3aed;font-weight:600"></span>
         <button onclick="downloadStokCSV()" style="padding:6px 14px;background:#034543;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">⬇ CSV</button>
         <button onclick="downloadStokXLSX()" style="padding:6px 14px;background:#166534;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">⬇ Excel</button>
+      </div>
+      <div class="filter-row" style="margin:6px 0 0;gap:8px">
         <input id="stokSearch" type="text" placeholder="Cari produk..." oninput="filterStok()" style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.82rem;width:200px">
+        <select id="stokBeliFilter" onchange="filterStok()">
+          <option value="">Semua</option>
+          <option value="beli">Perlu Beli</option>
+          <option value="cukup">Stok Cukup</option>
+        </select>
         <select id="stokKatFilter" onchange="filterStok()">
           <option value="">Semua Kategori</option>
           <option>PERLENGKAPAN SEKOLAH</option><option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN PASKIBRA</option><option>SERAGAM KARNAVAL</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN PRAMUKA</option><option>AKSESORIS</option><option>PERLENGKAPAN POLRI</option><option>PERLENGKAPAN TNI</option><option>PERLENGKAPAN POL PP</option><option>SEPATU PDH & PDL</option><option>PERLENGKAPAN PELAYARAN</option><option>PERL. TNI</option><option>PERL. PERBAKIN</option>
@@ -294,16 +307,25 @@
         <th class="tr">Avg 3Bln Terakhir</th><th>Tren</th><th>Tren %</th>
         <th>Tipe</th>
         <th class="tr" style="background:#fef9c3;color:#854d0e">Rek. Stok</th>
+        <th class="tr" style="background:#e0f2fe;color:#0369a1">Stok Toko</th>
+        <th class="tr" style="background:#f3e8ff;color:#7c3aed">Stok Gudang</th>
+        <th class="tr" style="background:#f0fdf4;color:#166534">Total Stok</th>
+        <th class="tr" style="background:#fef2f2;color:#dc2626">Perlu Beli</th>
         <th>Terakhir Terjual</th>
         <th style="background:#dcfce7;color:#166534;min-width:90px">Final Order</th>
+        <th class="tr" style="background:#fef9c3;color:#854d0e;min-width:110px">Est. Budget</th>
       </tr></thead>
       <tbody id="tbStok"></tbody>
     </table></div>
+    <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:12px;padding:10px 16px;background:#fef9c3;border-radius:10px;border:1px solid #fde68a">
+      <span style="font-weight:700;color:#854d0e;font-size:.9rem">Total Est. Budget:</span>
+      <span id="totalBudgetVal" style="font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;font-size:1.1rem;color:#854d0e">—</span>
+    </div>
   </div>
 </div>
 
 </div>
-<div class="gen-info">Generated by generate_harmoni_app.py · 09 Jun 2026 21:25</div>
+<div class="gen-info">Generated by generate_harmoni_app.py · 09 Jun 2026 21:59</div>
 
 <script>
 let BULAN = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Jul-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
@@ -753,9 +775,76 @@ function rekBadge(qty){
   return`<span style="background:#fef9c3;color:#854d0e;padding:3px 10px;border-radius:6px;font-weight:700;font-size:.82rem">${qty} pcs</span>`;
 }
 
+// ── Stok fisik (toko & gudang) ───────────────────────────────────────────────
+let STOK_TOKO   = JSON.parse(localStorage.getItem('stok_toko')||'{}');
+let STOK_GUDANG = JSON.parse(localStorage.getItem('stok_gudang')||'{}');
+
+function uploadStokFisik(files, jenis){
+  if(!files||!files.length) return;
+  const doUpload=()=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+      if(!rows.length) return;
+      const hdr=rows[0].map(h=>String(h||'').toLowerCase().trim());
+      const iSku=hdr.indexOf('sku');
+      const iQty=hdr.indexOf('stock_qty');
+      if(iSku<0||iQty<0){ alert('Format tidak dikenali. Pastikan file export produk Olsera.'); return; }
+      const map={};
+      for(let i=1;i<rows.length;i++){
+        const sku=String(rows[i][iSku]||'').trim();
+        const qty=Number(rows[i][iQty])||0;
+        if(sku) map[sku]=(map[sku]||0)+qty;
+      }
+      if(jenis==='toko'){
+        STOK_TOKO=map;
+        localStorage.setItem('stok_toko',JSON.stringify(map));
+        document.getElementById('stokTokoLabel').textContent='✓ Toko: '+Object.keys(map).length+' SKU';
+      } else {
+        STOK_GUDANG=map;
+        localStorage.setItem('stok_gudang',JSON.stringify(map));
+        document.getElementById('stokGudangLabel').textContent='✓ Gudang: '+Object.keys(map).length+' SKU';
+      }
+      filterStok();
+    };
+    reader.readAsArrayBuffer(files[0]);
+  };
+  if(typeof XLSX!=='undefined'){ doUpload(); return; }
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+  s.onload=doUpload; document.head.appendChild(s);
+}
+
+function updateBudgetRow(input, sku, hpp){
+  const val=Number(input.value)||0;
+  const id='budget_'+sku.replace(/[^a-zA-Z0-9]/g,'_');
+  const el=document.getElementById(id);
+  if(el) el.textContent=val>0?fmtRp(val*hpp):'—';
+  updateTotalBudget();
+}
+
+function updateTotalBudget(){
+  let total=0;
+  document.querySelectorAll('[id^="budget_"]').forEach(el=>{
+    const v=el.textContent;
+    if(v&&v!=='—') total+=parseFloat(v.replace(/[^0-9]/g,''));
+  });
+  const el=document.getElementById('totalBudgetVal');
+  if(el) el.textContent=total>0?fmtRp(total):'—';
+}
+
 function stokKey(sku){ return 'final_order_'+sku; }
 function saveFinal(sku,val){ localStorage.setItem(stokKey(sku), val); }
 function getFinal(sku){ return localStorage.getItem(stokKey(sku))||''; }
+
+// Restore stok label on load
+(function(){
+  const nt=Object.keys(STOK_TOKO).length, ng=Object.keys(STOK_GUDANG).length;
+  if(nt>0) setTimeout(()=>{ const el=document.getElementById('stokTokoLabel'); if(el) el.textContent='✓ Toko: '+nt+' SKU'; },100);
+  if(ng>0) setTimeout(()=>{ const el=document.getElementById('stokGudangLabel'); if(el) el.textContent='✓ Gudang: '+ng+' SKU'; },100);
+})();
 
 function renderStok(data){
   const tb=document.getElementById('tbStok');
@@ -767,6 +856,14 @@ function renderStok(data){
     const tcolor=s.trend==='naik'?'#15803d':s.trend==='turun'?'#dc2626':'#854d0e';
     const savedFinal=getFinal(s.sku);
     const skuId='final_'+s.sku.replace(/[^a-zA-Z0-9]/g,'_');
+    const stToko=STOK_TOKO[s.sku]||0;
+    const stGudang=STOK_GUDANG[s.sku]||0;
+    const stTotal=stToko+stGudang;
+    const perlBeli=Math.max(0,s.rek_qty-stTotal);
+    const hpp=s.hpp_unit||0;
+    const finalVal=savedFinal?Number(savedFinal):0;
+    const estBudget=finalVal>0?finalVal*hpp:perlBeli*hpp;
+    const stOk=stTotal>=s.rek_qty;
     tb.innerHTML+=`<tr>
       <td class="tc">${i+1}</td>
       <td><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${s.sku}</code></td>
@@ -780,11 +877,16 @@ function renderStok(data){
       <td class="tr num" style="color:${tcolor}">${tpct}</td>
       <td class="tc">${s.is_seasonal?'<span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:12px;padding:2px 8px;font-size:.72rem;font-weight:700;white-space:nowrap">🗓 Musiman<br><span style="font-weight:400;font-size:.68rem">Puncak: '+s.peak_month+'</span></span>':'<span style="font-size:.78rem;color:#64748b">Reguler</span>'}</td>
       <td class="tc">${rekBadge(s.rek_qty)}</td>
+      <td class="tr num" style="color:#0369a1">${stToko>0?stToko:'—'}</td>
+      <td class="tr num" style="color:#7c3aed">${stGudang>0?stGudang:'—'}</td>
+      <td class="tr num" style="font-weight:700;color:${stOk?'#166534':'#dc2626'}">${stTotal>0?stTotal:'—'}</td>
+      <td class="tr num" style="font-weight:700;color:#dc2626">${perlBeli>0?perlBeli:(stTotal>0?'✓':'—')}</td>
       <td class="tc" style="font-size:.78rem;color:#64748b">${s.last_sold||'—'}</td>
       <td class="tc"><input type="number" min="0" id="${skuId}" value="${savedFinal}"
-        oninput="saveFinal('${s.sku}',this.value)"
+        oninput="saveFinal('${s.sku}',this.value);updateBudgetRow(this,'${s.sku}',${hpp})"
         style="width:76px;padding:4px 8px;border:1.5px solid #86efac;border-radius:6px;text-align:right;font-family:'Plus Jakarta Sans',sans-serif;font-size:.85rem;font-weight:600;color:#166534;background:#f0fdf4;outline:none"
         placeholder="0"></td>
+      <td class="tr num" id="budget_${s.sku.replace(/[^a-zA-Z0-9]/g,'_')}" style="color:#854d0e;font-weight:700">${estBudget>0?fmtRp(estBudget):'—'}</td>
     </tr>`;
   });
 }
@@ -794,23 +896,39 @@ function filterStok(){
   const q=document.getElementById('stokSearch').value.toLowerCase();
   const kat=document.getElementById('stokKatFilter').value;
   const trend=document.getElementById('stokTrendFilter').value;
+  const beli=document.getElementById('stokBeliFilter').value;
   let d=STOK_DATA.filter(s=>{
     if(q&&!s.produk.toLowerCase().includes(q)&&!s.sku.toLowerCase().includes(q)&&!s.varian.toLowerCase().includes(q))return false;
     if(kat&&s.kategori!==kat)return false;
     if(trend==='musiman'){if(!s.is_seasonal)return false;}
     else if(trend&&s.trend!==trend)return false;
+    if(beli==='beli'){
+      const tot=(STOK_TOKO[s.sku]||0)+(STOK_GUDANG[s.sku]||0);
+      if(tot>=s.rek_qty)return false;
+    }
+    if(beli==='cukup'){
+      const tot=(STOK_TOKO[s.sku]||0)+(STOK_GUDANG[s.sku]||0);
+      if(tot<s.rek_qty)return false;
+    }
     return true;
   });
   renderStok(d);
 }
 
 function stokTableData(){
-  const headers=['No','SKU','Produk','Varian','Kategori','Total Qty','Avg/Bln','Avg 3Bln Terakhir','Tren','Tren %','Tipe','Puncak','Rek. Stok','Terakhir Terjual','Final Order'];
+  const headers=['No','SKU','Produk','Varian','Kategori','Total Qty','Avg/Bln','Avg 3Bln Terakhir','Tren','Tren %','Tipe','Puncak','Rek. Stok','Stok Toko','Stok Gudang','Total Stok','Perlu Beli','Terakhir Terjual','Final Order','Est. Budget'];
   const rows=STOK_DATA.map((s,i)=>{
     const tpct=(s.trend_pct>0?'+':'')+s.trend_pct.toFixed(0)+'%';
     const final=getFinal(s.sku);
+    const finalNum=final?Number(final):0;
     const tipe=s.is_seasonal?'Musiman':'Reguler';
-    return [i+1,s.sku,s.produk,s.varian,s.kategori,s.total_qty,s.avg_per_bulan,s.recent3_avg,s.trend,tpct,tipe,s.peak_month||'',s.rek_qty,s.last_sold||'',final?Number(final):''];
+    const stToko=STOK_TOKO[s.sku]||0;
+    const stGudang=STOK_GUDANG[s.sku]||0;
+    const stTotal=stToko+stGudang;
+    const perlBeli=Math.max(0,s.rek_qty-stTotal);
+    const hpp=s.hpp_unit||0;
+    const budget=finalNum>0?finalNum*hpp:perlBeli*hpp;
+    return [i+1,s.sku,s.produk,s.varian,s.kategori,s.total_qty,s.avg_per_bulan,s.recent3_avg,s.trend,tpct,tipe,s.peak_month||'',s.rek_qty,stToko||'',stGudang||'',stTotal||'',perlBeli||'',s.last_sold||'',finalNum||'',budget||''];
   });
   return {headers,rows};
 }
