@@ -778,9 +778,10 @@ html = f"""<!DOCTYPE html>
         <th style="position:sticky;left:38px;z-index:3;background:#034543;min-width:90px">SKU</th>
         <th style="position:sticky;left:128px;z-index:3;background:#034543;min-width:160px;border-right:2px solid #0a7874">Produk</th>
         <th>Varian</th><th>Kategori</th>
-        <th class="tr">Total Qty (14Bln)</th><th class="tr">Avg/Bln</th>
+        <th class="tr">Avg/Bln</th>
         <th class="tr">Avg 3Bln Terakhir</th><th>Tren</th><th>Tren %</th>
         <th>Tipe</th>
+        <th class="tr">Total Qty Terjual</th>
         <th class="tr" style="background:#fef9c3;color:#854d0e">Rek. Stok</th>
         <th class="tr" style="background:#e0f2fe;color:#0369a1">Stok Toko</th>
         <th class="tr" style="background:#f3e8ff;color:#7c3aed">Stok Gudang</th>
@@ -1387,12 +1388,12 @@ function renderStok(data){{
       <td style="position:sticky;left:128px;z-index:2;background:${{rowBg}};min-width:160px;border-right:2px solid #e2e8f0;font-weight:600"><strong>${{s.produk}}</strong></td>
       <td>${{s.varian}}</td>
       <td><span class="badge-blue" style="font-size:.68rem">${{s.kategori.replace('PERLENGKAPAN ','')}}</span></td>
-      <td class="tr num">${{s.total_qty.toLocaleString('id-ID')}}</td>
       <td class="tr num">${{s.avg_per_bulan}}</td>
       <td class="tr num">${{s.recent3_avg}}</td>
       <td>${{trendBadge(s.trend)}}</td>
       <td class="tr num" style="color:${{tcolor}}">${{tpct}}</td>
       <td class="tc">${{s.is_seasonal?'<span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:12px;padding:2px 8px;font-size:.72rem;font-weight:700;white-space:nowrap">🗓 Musiman<br><span style="font-weight:400;font-size:.68rem">Puncak: '+s.peak_month+'</span></span>':'<span style="font-size:.78rem;color:#64748b">Reguler</span>'}}</td>
+      <td class="tr num">${{s.total_qty.toLocaleString('id-ID')}}</td>
       <td class="tc">${{rekBadge(s.rek_qty)}}</td>
       <td class="tr num" style="color:#0369a1">${{stToko>0?stToko:'—'}}</td>
       <td class="tr num" style="color:#7c3aed">${{stGudang>0?stGudang:'—'}}</td>
