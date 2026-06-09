@@ -742,8 +742,8 @@ html = f"""<!DOCTYPE html>
     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
       <span>📦 Rekomendasi Stok Per SKU</span>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px">
-        <input type="file" id="stokTokoInput" accept=".xlsx" style="display:none" onchange="uploadStokFisik(this.files,'toko')">
-        <input type="file" id="stokGudangInput" accept=".xlsx" style="display:none" onchange="uploadStokFisik(this.files,'gudang')">
+        <input type="file" id="stokTokoInput" accept=".xlsx" multiple style="display:none" onchange="uploadStokFisik(this.files,'toko')">
+        <input type="file" id="stokGudangInput" accept=".xlsx" multiple style="display:none" onchange="uploadStokFisik(this.files,'gudang')">
         <button onclick="document.getElementById('stokTokoInput').click()" style="padding:6px 14px;background:#0369a1;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">🏪 Upload Stok Toko</button>
         <button onclick="document.getElementById('stokGudangInput').click()" style="padding:6px 14px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">🏭 Upload Stok Gudang</button>
         <span id="stokTokoLabel" style="font-size:.75rem;color:#0369a1;font-weight:600"></span>
@@ -789,9 +789,25 @@ html = f"""<!DOCTYPE html>
       </tr></thead>
       <tbody id="tbStok"></tbody>
     </table></div>
-    <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:12px;padding:10px 16px;background:#fef9c3;border-radius:10px;border:1px solid #fde68a">
-      <span style="font-weight:700;color:#854d0e;font-size:.9rem">Total Est. Budget:</span>
-      <span id="totalBudgetVal" style="font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;font-size:1.1rem;color:#854d0e">—</span>
+    <div style="margin-top:12px;padding:14px 18px;background:#fef9c3;border-radius:10px;border:1px solid #fde68a">
+      <div style="display:flex;flex-wrap:wrap;gap:24px;justify-content:flex-end;align-items:center">
+        <div style="text-align:right">
+          <div style="font-size:.72rem;color:#92400e;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Total Modal</div>
+          <div id="totalBudgetVal" style="font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;font-size:1rem;color:#854d0e">—</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.72rem;color:#166534;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Total Nilai Jual</div>
+          <div id="totalJualVal" style="font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;font-size:1rem;color:#166534">—</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.72rem;color:#1d4ed8;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Est. Profit</div>
+          <div id="totalProfitVal" style="font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;font-size:1rem;color:#1d4ed8">—</div>
+        </div>
+        <div style="text-align:right;border-left:2px solid #fde068;padding-left:18px">
+          <div style="font-size:.72rem;color:#7c3aed;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Est. Margin</div>
+          <div id="totalMarginVal" style="font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;font-size:1rem;color:#7c3aed">—</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1254,34 +1270,43 @@ let STOK_GUDANG = JSON.parse(localStorage.getItem('stok_gudang')||'{{}}');
 function uploadStokFisik(files, jenis){{
   if(!files||!files.length) return;
   const doUpload=()=>{{
-    const reader=new FileReader();
-    reader.onload=e=>{{
-      const wb=XLSX.read(e.target.result,{{type:'array'}});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws,{{header:1}});
-      if(!rows.length) return;
-      const hdr=rows[0].map(h=>String(h||'').toLowerCase().trim());
-      const iSku=hdr.indexOf('sku');
-      const iQty=hdr.indexOf('stock_qty');
-      if(iSku<0||iQty<0){{ alert('Format tidak dikenali. Pastikan file export produk Olsera.'); return; }}
-      const map={{}};
-      for(let i=1;i<rows.length;i++){{
-        const sku=String(rows[i][iSku]||'').trim();
-        const qty=Number(rows[i][iQty])||0;
-        if(sku) map[sku]=(map[sku]||0)+qty;
-      }}
+    const map={{}};
+    let loaded=0;
+    const total=files.length;
+    const tryFinish=()=>{{
+      loaded++;
+      if(loaded<total) return;
       if(jenis==='toko'){{
         STOK_TOKO=map;
         localStorage.setItem('stok_toko',JSON.stringify(map));
-        document.getElementById('stokTokoLabel').textContent='✓ Toko: '+Object.keys(map).length+' SKU';
+        document.getElementById('stokTokoLabel').textContent='✓ Toko: '+Object.keys(map).length+' SKU ('+total+' file)';
       }} else {{
         STOK_GUDANG=map;
         localStorage.setItem('stok_gudang',JSON.stringify(map));
-        document.getElementById('stokGudangLabel').textContent='✓ Gudang: '+Object.keys(map).length+' SKU';
+        document.getElementById('stokGudangLabel').textContent='✓ Gudang: '+Object.keys(map).length+' SKU ('+total+' file)';
       }}
       filterStok();
     }};
-    reader.readAsArrayBuffer(files[0]);
+    Array.from(files).forEach(file=>{{
+      const reader=new FileReader();
+      reader.onload=e=>{{
+        const wb=XLSX.read(e.target.result,{{type:'array'}});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=XLSX.utils.sheet_to_json(ws,{{header:1}});
+        if(!rows.length){{ tryFinish(); return; }}
+        const hdr=rows[0].map(h=>String(h||'').toLowerCase().trim());
+        const iSku=hdr.indexOf('sku');
+        const iQty=hdr.indexOf('stock_qty');
+        if(iSku<0||iQty<0){{ tryFinish(); return; }}
+        for(let i=1;i<rows.length;i++){{
+          const sku=String(rows[i][iSku]||'').trim();
+          const qty=Number(rows[i][iQty])||0;
+          if(sku) map[sku]=(map[sku]||0)+qty;
+        }}
+        tryFinish();
+      }};
+      reader.readAsArrayBuffer(file);
+    }});
   }};
   if(typeof XLSX!=='undefined'){{ doUpload(); return; }}
   const s=document.createElement('script');
@@ -1289,22 +1314,35 @@ function uploadStokFisik(files, jenis){{
   s.onload=doUpload; document.head.appendChild(s);
 }}
 
-function updateBudgetRow(input, sku, hpp){{
+function updateBudgetRow(input, sku, hpp, hju){{
   const val=Number(input.value)||0;
-  const id='budget_'+sku.replace(/[^a-zA-Z0-9]/g,'_');
-  const el=document.getElementById(id);
+  const sid=sku.replace(/[^a-zA-Z0-9]/g,'_');
+  const el=document.getElementById('budget_'+sid);
+  const jel=document.getElementById('jual_'+sid);
   if(el) el.textContent=val>0?fmtRp(val*hpp):'—';
+  if(jel) jel.textContent=val>0?String(val*hju):'0';
   updateTotalBudget();
 }}
 
 function updateTotalBudget(){{
-  let total=0;
+  let totalModal=0, totalJual=0;
   document.querySelectorAll('[id^="budget_"]').forEach(el=>{{
     const v=el.textContent;
-    if(v&&v!=='—') total+=parseFloat(v.replace(/[^0-9]/g,''));
+    if(v&&v!=='—') totalModal+=parseFloat(v.replace(/[^0-9]/g,''));
   }});
-  const el=document.getElementById('totalBudgetVal');
-  if(el) el.textContent=total>0?fmtRp(total):'—';
+  document.querySelectorAll('[id^="jual_"]').forEach(el=>{{
+    totalJual+=Number(el.textContent)||0;
+  }});
+  const profit=totalJual-totalModal;
+  const margin=totalJual>0?(profit/totalJual*100):0;
+  const bEl=document.getElementById('totalBudgetVal');
+  const jEl=document.getElementById('totalJualVal');
+  const pEl=document.getElementById('totalProfitVal');
+  const mEl=document.getElementById('totalMarginVal');
+  if(bEl) bEl.textContent=totalModal>0?fmtRp(totalModal):'—';
+  if(jEl) jEl.textContent=totalJual>0?fmtRp(totalJual):'—';
+  if(pEl) pEl.textContent=profit>0?fmtRp(profit):'—';
+  if(mEl) mEl.textContent=totalJual>0?margin.toFixed(1)+'%':'—';
 }}
 
 function stokKey(sku){{ return 'final_order_'+sku; }}
@@ -1333,8 +1371,11 @@ function renderStok(data){{
     const stTotal=stToko+stGudang;
     const perlBeli=Math.max(0,s.rek_qty-stTotal);
     const hpp=s.hpp_unit||0;
+    const harga=s.harga_unit||0;
     const finalVal=savedFinal?Number(savedFinal):0;
-    const estBudget=finalVal>0?finalVal*hpp:perlBeli*hpp;
+    const qty4calc=finalVal>0?finalVal:perlBeli;
+    const estBudget=qty4calc*hpp;
+    const estJual=qty4calc*harga;
     const stOk=stTotal>=s.rek_qty;
     tb.innerHTML+=`<tr>
       <td class="tc">${{i+1}}</td>
@@ -1355,10 +1396,11 @@ function renderStok(data){{
       <td class="tr num" style="font-weight:700;color:#dc2626">${{perlBeli>0?perlBeli:(stTotal>0?'✓':'—')}}</td>
       <td class="tc" style="font-size:.78rem;color:#64748b">${{s.last_sold||'—'}}</td>
       <td class="tc"><input type="number" min="0" id="${{skuId}}" value="${{savedFinal}}"
-        oninput="saveFinal('${{s.sku}}',this.value);updateBudgetRow(this,'${{s.sku}}',${{hpp}})"
+        oninput="saveFinal('${{s.sku}}',this.value);updateBudgetRow(this,'${{s.sku}}',${{hpp}},${{harga}})"
         style="width:76px;padding:4px 8px;border:1.5px solid #86efac;border-radius:6px;text-align:right;font-family:'Plus Jakarta Sans',sans-serif;font-size:.85rem;font-weight:600;color:#166534;background:#f0fdf4;outline:none"
         placeholder="0"></td>
       <td class="tr num" id="budget_${{s.sku.replace(/[^a-zA-Z0-9]/g,'_')}}" style="color:#854d0e;font-weight:700">${{estBudget>0?fmtRp(estBudget):'—'}}</td>
+      <span id="jual_${{s.sku.replace(/[^a-zA-Z0-9]/g,'_')}}" style="display:none">${{estJual}}</span>
     </tr>`;
   }});
 }}
