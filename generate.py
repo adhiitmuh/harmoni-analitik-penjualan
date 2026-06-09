@@ -338,7 +338,7 @@ for r in raw_rows:
 
 stok_rekomendasi = []
 for sku, qty_per_bulan in sku_monthly_qty.items():
-    if sku == 'CUSTOM': continue  # custom orders tidak bisa di-stok
+    if sku == 'CUSTOM': continue
     info = sku_info[sku]
     total_qty = sum(qty_per_bulan)
     months_active = sum(1 for q in qty_per_bulan if q > 0)
@@ -350,11 +350,36 @@ for sku, qty_per_bulan in sku_monthly_qty.items():
     trend_pct = (recent3 - prev3) / prev3 * 100 if prev3 > 0 else (100 if recent3 > 0 else 0)
 
     if trend_pct > 20:
-        trend, rek_qty = 'naik', max(1, round(recent3_avg * 1.3))
+        trend = 'naik'
     elif trend_pct < -20:
-        trend, rek_qty = 'turun', max(1, round(recent3_avg * 0.9))
+        trend = 'turun'
     else:
-        trend, rek_qty = 'stabil', max(1, round(recent3_avg * 1.1))
+        trend = 'stabil'
+
+    # ── Deteksi musiman ──────────────────────────────────────────────────────
+    # Rata-rata per bulan kalender (1=Jan..12=Des), bisa lintas tahun
+    from collections import defaultdict as _dd
+    cal_qty = _dd(list)
+    for i, b in enumerate(BULAN_ORDER):
+        mn = MONTH_NUM.get(b.split('-')[0], 0)
+        cal_qty[mn].append(qty_per_bulan[i])
+    cal_avg = {m: sum(v)/len(v) for m, v in cal_qty.items() if v}
+    peak_month_num = max(cal_avg, key=cal_avg.get) if cal_avg else 0
+    peak_avg       = cal_avg.get(peak_month_num, 0)
+    overall_avg    = total_qty / max(N_BULAN, 1)
+    seasonal_ratio = peak_avg / overall_avg if overall_avg > 0 else 1
+    is_seasonal    = seasonal_ratio >= 2.5 and total_qty >= 10 and months_active >= 3
+    peak_month_name = MONTH_ID.get(peak_month_num, '')
+
+    if is_seasonal:
+        # Rekomendasi = rata-rata bulan puncak + buffer 20%
+        rek_qty = max(1, round(peak_avg * 1.2))
+    elif trend == 'naik':
+        rek_qty = max(1, round(recent3_avg * 1.3))
+    elif trend == 'turun':
+        rek_qty = max(1, round(recent3_avg * 0.9))
+    else:
+        rek_qty = max(1, round(recent3_avg * 1.1))
 
     last_sold = next((b for b in reversed(BULAN_ORDER) if sku_monthly_qty[sku][BULAN_IDX[b]] > 0), '')
 
@@ -367,6 +392,9 @@ for sku, qty_per_bulan in sku_monthly_qty.items():
         'trend': trend, 'trend_pct': round(trend_pct, 1),
         'rek_qty': rek_qty, 'last_sold': last_sold,
         'monthly': list(qty_per_bulan),
+        'is_seasonal': is_seasonal,
+        'peak_month': peak_month_name,
+        'peak_avg': round(peak_avg, 1),
     })
 
 stok_rekomendasi.sort(key=lambda x: x['total_qty'], reverse=True)
@@ -703,11 +731,11 @@ html = f"""<!DOCTYPE html>
   <div class="insight-box">
     <strong>📦 Cara Baca Rekomendasi Stok</strong>
     <ul>
-      <li>Rekomendasi dihitung dari rata-rata 3 bulan terakhir (Des-25, Jan-26, Feb-26) + buffer tren.</li>
-      <li><strong>Naik ↑</strong> = penjualan tumbuh &gt;20% dibanding 3 bulan sebelumnya → sediakan 30% lebih banyak.</li>
+      <li><strong>🗓 Musiman</strong> = penjualan terkonsentrasi di bulan tertentu (puncak ≥2.5× rata-rata) → rekomendasi pakai rata-rata bulan puncak + 20% buffer.</li>
+      <li><strong>Naik ↑</strong> = tumbuh &gt;20% vs 3 bulan sebelumnya → sediakan 30% lebih banyak dari rata-rata recent.</li>
       <li><strong>Stabil →</strong> = perubahan ±20% → buffer 10% dari rata-rata recent.</li>
-      <li><strong>Turun ↓</strong> = penjualan turun &gt;20% → kurangi 10% dari rata-rata recent.</li>
-      <li>Filter per kategori, atau cari produk di kotak pencarian.</li>
+      <li><strong>Turun ↓</strong> = turun &gt;20% → kurangi 10% dari rata-rata recent.</li>
+      <li>Filter per kategori, tren, atau cari produk di kotak pencarian.</li>
     </ul>
   </div>
   <div class="card card-full">
@@ -726,6 +754,7 @@ html = f"""<!DOCTYPE html>
           <option value="naik">📈 Tren Naik</option>
           <option value="stabil">➡️ Tren Stabil</option>
           <option value="turun">📉 Tren Turun</option>
+          <option value="musiman">🗓 Musiman</option>
         </select>
       </div>
     </div>
@@ -735,6 +764,7 @@ html = f"""<!DOCTYPE html>
         <th>No</th><th>SKU</th><th>Produk</th><th>Varian</th><th>Kategori</th>
         <th class="tr">Total Qty (14Bln)</th><th class="tr">Avg/Bln</th>
         <th class="tr">Avg 3Bln Terakhir</th><th>Tren</th><th>Tren %</th>
+        <th>Tipe</th>
         <th class="tr" style="background:#fef9c3;color:#854d0e">Rek. Stok</th>
         <th>Terakhir Terjual</th>
         <th style="background:#dcfce7;color:#166534;min-width:90px">Final Order</th>
@@ -1220,6 +1250,7 @@ function renderStok(data){{
       <td class="tr num">${{s.recent3_avg}}</td>
       <td>${{trendBadge(s.trend)}}</td>
       <td class="tr num" style="color:${{tcolor}}">${{tpct}}</td>
+      <td class="tc">${{s.is_seasonal?'<span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:12px;padding:2px 8px;font-size:.72rem;font-weight:700;white-space:nowrap">🗓 Musiman<br><span style="font-weight:400;font-size:.68rem">Puncak: '+s.peak_month+'</span></span>':'<span style="font-size:.78rem;color:#64748b">Reguler</span>'}}</td>
       <td class="tc">${{rekBadge(s.rek_qty)}}</td>
       <td class="tc" style="font-size:.78rem;color:#64748b">${{s.last_sold||'—'}}</td>
       <td class="tc"><input type="number" min="0" id="${{skuId}}" value="${{savedFinal}}"
@@ -1238,18 +1269,20 @@ function filterStok(){{
   let d=STOK_DATA.filter(s=>{{
     if(q&&!s.produk.toLowerCase().includes(q)&&!s.sku.toLowerCase().includes(q)&&!s.varian.toLowerCase().includes(q))return false;
     if(kat&&s.kategori!==kat)return false;
-    if(trend&&s.trend!==trend)return false;
+    if(trend==='musiman'){{if(!s.is_seasonal)return false;}}
+    else if(trend&&s.trend!==trend)return false;
     return true;
   }});
   renderStok(d);
 }}
 
 function stokTableData(){{
-  const headers=['No','SKU','Produk','Varian','Kategori','Total Qty','Avg/Bln','Avg 3Bln Terakhir','Tren','Tren %','Rek. Stok','Terakhir Terjual','Final Order'];
+  const headers=['No','SKU','Produk','Varian','Kategori','Total Qty','Avg/Bln','Avg 3Bln Terakhir','Tren','Tren %','Tipe','Puncak','Rek. Stok','Terakhir Terjual','Final Order'];
   const rows=STOK_DATA.map((s,i)=>{{
     const tpct=(s.trend_pct>0?'+':'')+s.trend_pct.toFixed(0)+'%';
     const final=getFinal(s.sku);
-    return [i+1,s.sku,s.produk,s.varian,s.kategori,s.total_qty,s.avg_per_bulan,s.recent3_avg,s.trend,tpct,s.rek_qty,s.last_sold||'',final?Number(final):''];
+    const tipe=s.is_seasonal?'Musiman':'Reguler';
+    return [i+1,s.sku,s.produk,s.varian,s.kategori,s.total_qty,s.avg_per_bulan,s.recent3_avg,s.trend,tpct,tipe,s.peak_month||'',s.rek_qty,s.last_sold||'',final?Number(final):''];
   }});
   return {{headers,rows}};
 }}
