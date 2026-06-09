@@ -772,9 +772,12 @@ html = f"""<!DOCTYPE html>
       </div>
     </div>
     <div id="stokCount" style="font-size:.78rem;color:#64748b;margin-bottom:10px"></div>
-    <div class="table-wrap"><table>
+    <div class="table-wrap"><table style="border-collapse:separate;border-spacing:0">
       <thead><tr>
-        <th>No</th><th>SKU</th><th>Produk</th><th>Varian</th><th>Kategori</th>
+        <th style="position:sticky;left:0;z-index:3;background:#034543;min-width:38px">No</th>
+        <th style="position:sticky;left:38px;z-index:3;background:#034543;min-width:90px">SKU</th>
+        <th style="position:sticky;left:128px;z-index:3;background:#034543;min-width:160px;border-right:2px solid #0a7874">Produk</th>
+        <th>Varian</th><th>Kategori</th>
         <th class="tr">Total Qty (14Bln)</th><th class="tr">Avg/Bln</th>
         <th class="tr">Avg 3Bln Terakhir</th><th>Tren</th><th>Tren %</th>
         <th>Tipe</th>
@@ -1377,10 +1380,11 @@ function renderStok(data){{
     const estBudget=qty4calc*hpp;
     const estJual=qty4calc*harga;
     const stOk=stTotal>=s.rek_qty;
+    const rowBg=i%2===0?'#fff':'#f8fafc';
     tb.innerHTML+=`<tr>
-      <td class="tc">${{i+1}}</td>
-      <td><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${{s.sku}}</code></td>
-      <td><strong>${{s.produk}}</strong></td>
+      <td class="tc" style="position:sticky;left:0;z-index:2;background:${{rowBg}};min-width:38px">${{i+1}}</td>
+      <td style="position:sticky;left:38px;z-index:2;background:${{rowBg}};min-width:90px"><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${{s.sku}}</code></td>
+      <td style="position:sticky;left:128px;z-index:2;background:${{rowBg}};min-width:160px;border-right:2px solid #e2e8f0;font-weight:600"><strong>${{s.produk}}</strong></td>
       <td>${{s.varian}}</td>
       <td><span class="badge-blue" style="font-size:.68rem">${{s.kategori.replace('PERLENGKAPAN ','')}}</span></td>
       <td class="tr num">${{s.total_qty.toLocaleString('id-ID')}}</td>
