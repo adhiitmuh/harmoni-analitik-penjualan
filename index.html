@@ -825,12 +825,11 @@ function renderInventori(items){
   wrap.style.display='block'; empty.style.display='none';
   footer.style.display='block'; katDiv.style.display='block';
   cnt.textContent=items.length+' produk ditampilkan';
-  tbody.innerHTML='';
-  items.forEach((item,i)=>{
+  tbody.innerHTML=items.map((item,i)=>{
     const excl=isInvExcluded(item.sku);
     const rowBg=i%2===0?'#fff':'#f8fafc';
     const sid=item.sku.replace(/[^a-zA-Z0-9]/g,'_');
-    tbody.innerHTML+=`<tr style="opacity:${excl?'0.35':'1'}">
+    return `<tr style="opacity:${excl?'0.35':'1'}">
       <td class="tc" style="position:sticky;left:0;z-index:2;background:${rowBg};min-width:38px">${i+1}</td>
       <td style="position:sticky;left:38px;z-index:2;background:${rowBg};min-width:90px"><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${item.sku}</code></td>
       <td style="position:sticky;left:128px;z-index:2;background:${rowBg};min-width:160px;font-weight:600">${item.produk}</td>
@@ -848,7 +847,7 @@ function renderInventori(items){
         style="padding:2px 10px;border-radius:12px;font-size:.72rem;font-weight:700;cursor:pointer;border:none;
         background:${excl?'#fee2e2':'#f0fdf4'};color:${excl?'#dc2626':'#166534'}">${excl?'Excluded':'Sertakan'}</button></td>
     </tr>`;
-  });
+  }).join('');
   updateInventoriSummary(items);
 }
 
@@ -990,9 +989,7 @@ function updateKatChart(){
 }
 
 const tbDiv=document.getElementById('tbDiv');
-DIVISI_DATA.forEach(d=>{
-  tbDiv.innerHTML+=`<tr><td><strong>${d.bulan}</strong></td><td class="tr">${fmtRp(d.yh_omzet)}</td><td class="tr">${fmtRp(d.yh_profit)}</td><td>${mBadge(d.yh_margin)}</td><td class="tr">${fmtRp(d.cust_omzet)}</td><td class="tr">${fmtRp(d.cust_omzet)}</td><td class="tr">${pct(d.kontr_yh)}</td><td class="tr">${pct(100-d.kontr_yh)}</td></tr>`;
-});
+tbDiv.innerHTML=DIVISI_DATA.map(d=>`<tr><td><strong>${d.bulan}</strong></td><td class="tr">${fmtRp(d.yh_omzet)}</td><td class="tr">${fmtRp(d.yh_profit)}</td><td>${mBadge(d.yh_margin)}</td><td class="tr">${fmtRp(d.cust_omzet)}</td><td class="tr">${fmtRp(d.cust_omzet)}</td><td class="tr">${pct(d.kontr_yh)}</td><td class="tr">${pct(100-d.kontr_yh)}</td></tr>`).join('');
 
 function filterTopProduk(){
   renderTopProduk(FILTERED_IDX);
@@ -1000,11 +997,10 @@ function filterTopProduk(){
 
 function renderMas(data){
   const tb=document.getElementById('tbMas');
-  tb.innerHTML='';
-  data.forEach(m=>{
+  tb.innerHTML=data.map(m=>{
     const sc=m.status.includes('Kritis')?'badge-red':m.status.includes('Perhatian')?'badge-orange':'badge-yellow';
-    tb.innerHTML+=`<tr><td class="tc">${m.no}</td><td><code style="font-size:.78rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${m.sku}</code></td><td><span class="badge-blue" style="font-size:.68rem">${m.kat.replace('PERLENGKAPAN ','')}</span></td><td>${m.produk}</td><td>${m.varian}</td><td>${m.bulan}</td><td class="tr">${m.qty}</td><td class="tr">${fmtRp(m.omzet)}</td><td class="tr">${fmtRp(m.hpp)}</td><td class="tr" style="color:#dc2626;font-weight:600">-${fmtRp(Math.abs(m.profit))}</td><td class="tr" style="color:#dc2626">${m.margin.toFixed(1)}%</td><td><span class="${sc}">${m.status}</span></td><td style="font-size:.78rem;color:#64748b">${m.rek}</td></tr>`;
-  });
+    return `<tr><td class="tc">${m.no}</td><td><code style="font-size:.78rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${m.sku}</code></td><td><span class="badge-blue" style="font-size:.68rem">${m.kat.replace('PERLENGKAPAN ','')}</span></td><td>${m.produk}</td><td>${m.varian}</td><td>${m.bulan}</td><td class="tr">${m.qty}</td><td class="tr">${fmtRp(m.omzet)}</td><td class="tr">${fmtRp(m.hpp)}</td><td class="tr" style="color:#dc2626;font-weight:600">-${fmtRp(Math.abs(m.profit))}</td><td class="tr" style="color:#dc2626">${m.margin.toFixed(1)}%</td><td><span class="${sc}">${m.status}</span></td><td style="font-size:.78rem;color:#64748b">${m.rek}</td></tr>`;
+  }).join('');
 }
 renderMas(MASALAH_SKU);
 function filterMasalah(){
@@ -1126,9 +1122,8 @@ function getFinal(sku){ return localStorage.getItem(stokKey(sku))||''; }
 function renderStok(data){
   const tb=document.getElementById('tbStok');
   const cnt=document.getElementById('stokCount');
-  tb.innerHTML='';
   cnt.textContent=data.length+' produk ditampilkan';
-  data.forEach((s,i)=>{
+  tb.innerHTML=data.map((s,i)=>{
     const tpct=s.trend_pct>0?'+'+s.trend_pct.toFixed(0)+'%':s.trend_pct.toFixed(0)+'%';
     const tcolor=s.trend==='naik'?'#15803d':s.trend==='turun'?'#dc2626':'#854d0e';
     const savedFinal=getFinal(s.sku);
@@ -1145,7 +1140,7 @@ function renderStok(data){
     const estJual=qty4calc*harga;
     const stOk=stTotal>=s.rek_qty;
     const rowBg=i%2===0?'#fff':'#f8fafc';
-    tb.innerHTML+=`<tr>
+    return `<tr>
       <td class="tc" style="position:sticky;left:0;z-index:2;background:${rowBg};min-width:38px">${i+1}</td>
       <td style="position:sticky;left:38px;z-index:2;background:${rowBg};min-width:90px"><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${s.sku}</code></td>
       <td style="position:sticky;left:128px;z-index:2;background:${rowBg};min-width:160px;font-weight:600"><strong>${s.produk}</strong></td>
@@ -1171,7 +1166,7 @@ function renderStok(data){
       <td class="tr num" id="jual_${s.sku.replace(/[^a-zA-Z0-9]/g,'_')}" data-raw="${estJual}" style="color:#166534;font-weight:700">${estJual>0?fmtRp(estJual):harga===0?'<span style=\'color:#94a3b8;font-size:.72rem\'>Harga?</span>':'—'}</td>
       <td class="tr num" id="untung_${s.sku.replace(/[^a-zA-Z0-9]/g,'_')}" data-raw="${estJual-estBudget}" style="color:#1d4ed8;font-weight:700">${(estJual-estBudget)>0?fmtRp(estJual-estBudget):'—'}</td>
     </tr>`;
-  });
+  }).join('');
 }
 renderStok(STOK_DATA);
 updateTotalBudget();
