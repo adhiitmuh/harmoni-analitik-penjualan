@@ -82,7 +82,7 @@
     <div class="sub">Jan-25 – Feb-26 &nbsp;·&nbsp; 14 Bulan Data Aktual</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-    <div class="badge">Update: 10 Jun 2026 10:32</div>
+    <div class="badge">Update: 10 Jun 2026 10:47</div>
     <label id="uploadBtn" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;padding:5px 14px;border-radius:20px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:'Raleway',sans-serif;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.25)'" onmouseout="this.style.background='rgba(255,255,255,.15)'">
       📤 Perbarui Data
       <input type="file" id="olseraInput" accept=".xlsx" multiple style="display:none" onchange="handleOlseraUpload(this.files)">
@@ -97,7 +97,8 @@
   <button class="nav-btn" onclick="showTab('divisi',this)">🏢 Analisis Divisi</button>
   <button class="nav-btn" onclick="showTab('produk',this)">🏆 Top Produk</button>
   <button class="nav-btn" onclick="showTab('masalah',this)">🚨 Analisis Masalah</button>
-  <button class="nav-btn" onclick="showTab('stok',this)">📦 Stok & Rekomendasi</button>
+  <button class="nav-btn" onclick="showTab('inventori',this)">🏪 Inventori Stok</button>
+  <button class="nav-btn" onclick="showTab('stok',this)">📦 Rekomendasi</button>
 </div>
 
 <div class="period-bar">
@@ -255,6 +256,107 @@
 </div>
 
 <!-- STOK & REKOMENDASI -->
+<div id="tab-inventori" class="tab-content">
+  <div class="card card-full">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <span>🏪 Inventori Stok — Toko &amp; Gudang</span>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <input type="file" id="invTokoInput" accept=".xlsx" multiple style="display:none" onchange="uploadStokFisik(this.files,'toko')">
+        <input type="file" id="invGudangInput" accept=".xlsx" multiple style="display:none" onchange="uploadStokFisik(this.files,'gudang')">
+        <button onclick="document.getElementById('invTokoInput').click()" style="padding:6px 14px;background:#0369a1;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">🏪 Upload Stok Toko</button>
+        <span id="invTokoLabel" style="font-size:.75rem;color:#0369a1;font-weight:600"></span>
+        <button onclick="document.getElementById('invGudangInput').click()" style="padding:6px 14px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">🏭 Upload Stok Gudang</button>
+        <span id="invGudangLabel" style="font-size:.75rem;color:#7c3aed;font-weight:600"></span>
+      </div>
+    </div>
+    <div class="filter-row" style="margin:10px 0 8px;gap:8px">
+      <input id="invSearch" type="text" placeholder="Cari produk / SKU..." oninput="filterInventori()" style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.82rem;width:200px">
+      <select id="invKatFilter" onchange="filterInventori()" style="padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.82rem">
+        <option value="">Semua Kategori</option>
+        <option value="AKSESORIS">AKSESORIS</option><option value="PERL. PERBAKIN">PERL. PERBAKIN</option><option value="PERL. TNI">PERL. TNI</option><option value="PERLENGKAPAN PASKIBRA">PERLENGKAPAN PASKIBRA</option><option value="PERLENGKAPAN PELAYARAN">PERLENGKAPAN PELAYARAN</option><option value="PERLENGKAPAN PNS">PERLENGKAPAN PNS</option><option value="PERLENGKAPAN POL PP">PERLENGKAPAN POL PP</option><option value="PERLENGKAPAN POLRI">PERLENGKAPAN POLRI</option><option value="PERLENGKAPAN PRAMUKA">PERLENGKAPAN PRAMUKA</option><option value="PERLENGKAPAN SECURITY">PERLENGKAPAN SECURITY</option><option value="PERLENGKAPAN SEKOLAH">PERLENGKAPAN SEKOLAH</option><option value="PERLENGKAPAN TNI">PERLENGKAPAN TNI</option><option value="SEPATU PDH & PDL">SEPATU PDH & PDL</option><option value="SERAGAM KARNAVAL">SERAGAM KARNAVAL</option>
+      </select>
+      <select id="invSrcFilter" onchange="filterInventori()" style="padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.82rem">
+        <option value="">Toko &amp; Gudang</option>
+        <option value="toko">Hanya Toko</option>
+        <option value="gudang">Hanya Gudang</option>
+      </select>
+    </div>
+    <div id="invCount" style="font-size:.8rem;color:#64748b;margin-bottom:8px"></div>
+    <div id="invEmpty" style="text-align:center;padding:40px;color:#94a3b8;display:none">
+      <div style="font-size:2rem;margin-bottom:8px">📦</div>
+      <div style="font-weight:600">Belum ada data stok</div>
+      <div style="font-size:.82rem;margin-top:4px">Upload file Olsera toko dan/atau gudang dulu</div>
+    </div>
+    <div class="table-wrap" id="invTableWrap" style="display:none;border-collapse:separate;border-spacing:0">
+    <table style="border-collapse:separate;border-spacing:0">
+      <thead><tr>
+        <th style="position:sticky;left:0;z-index:3;background:#034543;min-width:38px">No</th>
+        <th style="position:sticky;left:38px;z-index:3;background:#034543;min-width:90px">SKU</th>
+        <th style="position:sticky;left:128px;z-index:3;background:#034543;min-width:160px">Produk</th>
+        <th style="position:sticky;left:288px;z-index:3;background:#034543;min-width:100px;border-right:2px solid #0a7874">Varian</th>
+        <th>Kategori</th>
+        <th class="tr" style="background:#e0f2fe;color:#0369a1">Qty Toko</th>
+        <th class="tr" style="background:#e0f2fe;color:#0369a1;min-width:110px">Modal Toko</th>
+        <th class="tr" style="background:#f3e8ff;color:#7c3aed">Qty Gudang</th>
+        <th class="tr" style="background:#f3e8ff;color:#7c3aed;min-width:110px">Modal Gudang</th>
+        <th class="tr" style="background:#f0fdf4;color:#166534;font-weight:700">Total Stok</th>
+        <th class="tr" style="background:#fef9c3;color:#854d0e;min-width:110px">Total Modal</th>
+        <th class="tr" style="background:#dcfce7;color:#166534;min-width:110px">Total Nilai Jual</th>
+        <th class="tr" style="background:#eff6ff;color:#1d4ed8;min-width:110px">Pot. Untung</th>
+        <th class="tc" style="min-width:80px">Exclude</th>
+      </tr></thead>
+      <tbody id="tbInv"></tbody>
+    </table></div>
+    <div id="invFooter" style="display:none;margin-top:12px;padding:14px 18px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
+      <div style="display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;align-items:center">
+        <div style="display:flex;gap:24px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:.72rem;color:#0369a1;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Qty Toko</div>
+            <div id="inv_qty_toko" style="font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;font-size:1rem;color:#0369a1">—</div>
+          </div>
+          <div>
+            <div style="font-size:.72rem;color:#7c3aed;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Qty Gudang</div>
+            <div id="inv_qty_gudang" style="font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;font-size:1rem;color:#7c3aed">—</div>
+          </div>
+          <div>
+            <div style="font-size:.72rem;color:#166534;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Total Stok</div>
+            <div id="inv_qty_total" style="font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;font-size:1rem;color:#166534">—</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap">
+          <div style="text-align:right">
+            <div style="font-size:.72rem;color:#854d0e;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Total Modal</div>
+            <div id="inv_modal_total" style="font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;font-size:1rem;color:#854d0e">—</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:.72rem;color:#166534;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Total Nilai Jual</div>
+            <div id="inv_jual_total" style="font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;font-size:1rem;color:#166534">—</div>
+          </div>
+          <div style="text-align:right;border-left:2px solid #e2e8f0;padding-left:18px">
+            <div style="font-size:.72rem;color:#1d4ed8;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Pot. Untung</div>
+            <div id="inv_untung_total" style="font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;font-size:1rem;color:#1d4ed8">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="invKatSummary" style="display:none;margin-top:16px">
+      <div style="font-size:.85rem;font-weight:700;color:#034543;margin-bottom:8px">📂 Ringkasan Per Kategori</div>
+      <div class="table-wrap"><table>
+        <thead><tr>
+          <th>Kategori</th>
+          <th class="tr">Jumlah SKU</th>
+          <th class="tr">Total Stok</th>
+          <th class="tr" style="background:#fef9c3;color:#854d0e">Total Modal</th>
+          <th class="tr" style="background:#dcfce7;color:#166534">Total Nilai Jual</th>
+          <th class="tr" style="background:#eff6ff;color:#1d4ed8">Pot. Untung</th>
+          <th class="tr" style="background:#fef3c7;color:#92400e">% dari Total Modal</th>
+        </tr></thead>
+        <tbody id="tbInvKat"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
 <div id="tab-stok" class="tab-content">
   <div class="insight-box">
     <strong>📦 Cara Baca Rekomendasi Stok</strong>
@@ -270,12 +372,8 @@
     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
       <span>📦 Rekomendasi Stok Per SKU</span>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px">
-        <input type="file" id="stokTokoInput" accept=".xlsx" multiple style="display:none" onchange="uploadStokFisik(this.files,'toko')">
-        <input type="file" id="stokGudangInput" accept=".xlsx" multiple style="display:none" onchange="uploadStokFisik(this.files,'gudang')">
-        <button onclick="document.getElementById('stokTokoInput').click()" style="padding:6px 14px;background:#0369a1;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">🏪 Upload Stok Toko</button>
-        <button onclick="document.getElementById('stokGudangInput').click()" style="padding:6px 14px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">🏭 Upload Stok Gudang</button>
-        <span id="stokTokoLabel" style="font-size:.75rem;color:#0369a1;font-weight:600"></span>
-        <span id="stokGudangLabel" style="font-size:.75rem;color:#7c3aed;font-weight:600"></span>
+        <span id="stokTokoLabel" style="font-size:.75rem;color:#0369a1;font-weight:600;padding:4px 10px;background:#eff6ff;border-radius:8px"></span>
+        <span id="stokGudangLabel" style="font-size:.75rem;color:#7c3aed;font-weight:600;padding:4px 10px;background:#f3e8ff;border-radius:8px"></span>
         <button onclick="downloadStokCSV()" style="padding:6px 14px;background:#034543;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">⬇ CSV</button>
         <button onclick="downloadStokXLSX()" style="padding:6px 14px;background:#166534;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">⬇ Excel</button>
       </div>
@@ -348,7 +446,7 @@
 </div>
 
 </div>
-<div class="gen-info">Generated by generate_harmoni_app.py · 10 Jun 2026 10:32</div>
+<div class="gen-info">Generated by generate_harmoni_app.py · 10 Jun 2026 10:47</div>
 
 <script>
 let BULAN = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Jul-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
@@ -697,11 +795,132 @@ function mBar(m,max=100){
   return`<div class="mbar-wrap">${mBadge(m)}<div class="mbar-bg"><div class="mbar-fill" style="width:${p}%;background:${c}"></div></div></div>`;
 }
 
+// ── Inventori Stok ────────────────────────────────────────────────────────────
+const _infoMap={};
+STOK_DATA.forEach(s=>{ _infoMap[s.sku]=s; });
+
+function isInvExcluded(sku){ return localStorage.getItem('inv_excl_'+sku)==='1'; }
+function toggleInvExclude(sku){
+  const was=isInvExcluded(sku);
+  localStorage.setItem('inv_excl_'+sku, was?'0':'1');
+  filterInventori();
+}
+
+function renderInventori(items){
+  const tbody=document.getElementById('tbInv');
+  const wrap=document.getElementById('invTableWrap');
+  const empty=document.getElementById('invEmpty');
+  const footer=document.getElementById('invFooter');
+  const katDiv=document.getElementById('invKatSummary');
+  const cnt=document.getElementById('invCount');
+  if(!items||!items.length){
+    wrap.style.display='none'; empty.style.display='block';
+    footer.style.display='none'; katDiv.style.display='none';
+    cnt.textContent='';
+    return;
+  }
+  wrap.style.display='block'; empty.style.display='none';
+  footer.style.display='block'; katDiv.style.display='block';
+  cnt.textContent=items.length+' produk ditampilkan';
+  tbody.innerHTML='';
+  items.forEach((item,i)=>{
+    const excl=isInvExcluded(item.sku);
+    const rowBg=i%2===0?'#fff':'#f8fafc';
+    const sid=item.sku.replace(/[^a-zA-Z0-9]/g,'_');
+    tbody.innerHTML+=`<tr style="opacity:${excl?'0.35':'1'}">
+      <td class="tc" style="position:sticky;left:0;z-index:2;background:${rowBg};min-width:38px">${i+1}</td>
+      <td style="position:sticky;left:38px;z-index:2;background:${rowBg};min-width:90px"><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${item.sku}</code></td>
+      <td style="position:sticky;left:128px;z-index:2;background:${rowBg};min-width:160px;font-weight:600">${item.produk}</td>
+      <td style="position:sticky;left:288px;z-index:2;background:${rowBg};min-width:100px;border-right:2px solid #e2e8f0">${item.varian}</td>
+      <td><span class="badge-blue" style="font-size:.68rem">${item.kategori.replace('PERLENGKAPAN ','')}</span></td>
+      <td class="tr num" style="color:#0369a1">${item.qToko>0?item.qToko.toLocaleString('id-ID'):'—'}</td>
+      <td class="tr num" style="color:#0369a1">${item.modalToko>0?fmtRp(item.modalToko):(item.qToko>0?'HPP?':'—')}</td>
+      <td class="tr num" style="color:#7c3aed">${item.qGudang>0?item.qGudang.toLocaleString('id-ID'):'—'}</td>
+      <td class="tr num" style="color:#7c3aed">${item.modalGudang>0?fmtRp(item.modalGudang):(item.qGudang>0?'HPP?':'—')}</td>
+      <td class="tr num" style="font-weight:700">${item.qTotal.toLocaleString('id-ID')}</td>
+      <td class="tr num" style="color:#854d0e;font-weight:700">${item.modalTotal>0?fmtRp(item.modalTotal):'—'}</td>
+      <td class="tr num" style="color:#166534;font-weight:700">${item.jualTotal>0?fmtRp(item.jualTotal):'—'}</td>
+      <td class="tr num" style="color:#1d4ed8;font-weight:700">${item.untung>0?fmtRp(item.untung):'—'}</td>
+      <td class="tc"><button onclick="toggleInvExclude('${item.sku}')"
+        style="padding:2px 10px;border-radius:12px;font-size:.72rem;font-weight:700;cursor:pointer;border:none;
+        background:${excl?'#fee2e2':'#f0fdf4'};color:${excl?'#dc2626':'#166534'}">${excl?'Excluded':'Sertakan'}</button></td>
+    </tr>`;
+  });
+  updateInventoriSummary(items);
+}
+
+function filterInventori(){
+  const allSkus=[...new Set([...Object.keys(STOK_TOKO),...Object.keys(STOK_GUDANG)])];
+  if(!allSkus.length){ renderInventori([]); return; }
+  const q=document.getElementById('invSearch').value.toLowerCase();
+  const kat=document.getElementById('invKatFilter').value;
+  const src=document.getElementById('invSrcFilter').value;
+  const items=allSkus.map(sku=>{
+    const info=_infoMap[sku]||{produk:sku,varian:'',kategori:'Lainnya',hpp_unit:0,harga_unit:0};
+    const qToko=STOK_TOKO[sku]||0, qGudang=STOK_GUDANG[sku]||0;
+    const qTotal=qToko+qGudang;
+    const hpp=info.hpp_unit||0, harga=info.harga_unit||0;
+    return {sku,produk:info.produk,varian:info.varian||'',kategori:info.kategori,
+      qToko,qGudang,qTotal,hpp,harga,
+      modalToko:qToko*hpp,modalGudang:qGudang*hpp,
+      modalTotal:qTotal*hpp,jualTotal:qTotal*harga,untung:qTotal*harga-qTotal*hpp};
+  }).filter(item=>{
+    if(q&&!item.produk.toLowerCase().includes(q)&&!item.sku.toLowerCase().includes(q)&&!item.varian.toLowerCase().includes(q)) return false;
+    if(kat&&item.kategori!==kat) return false;
+    if(src==='toko'&&item.qToko===0) return false;
+    if(src==='gudang'&&item.qGudang===0) return false;
+    return true;
+  }).sort((a,b)=>b.qTotal-a.qTotal);
+  renderInventori(items);
+}
+
+function updateInventoriSummary(items){
+  const active=items.filter(item=>!isInvExcluded(item.sku));
+  const totQToko=active.reduce((s,i)=>s+i.qToko,0);
+  const totQGudang=active.reduce((s,i)=>s+i.qGudang,0);
+  const totQTotal=active.reduce((s,i)=>s+i.qTotal,0);
+  const totModal=active.reduce((s,i)=>s+i.modalTotal,0);
+  const totJual=active.reduce((s,i)=>s+i.jualTotal,0);
+  const totUntung=totJual-totModal;
+  const f=id=>document.getElementById(id);
+  if(f('inv_qty_toko')) f('inv_qty_toko').textContent=totQToko.toLocaleString('id-ID');
+  if(f('inv_qty_gudang')) f('inv_qty_gudang').textContent=totQGudang.toLocaleString('id-ID');
+  if(f('inv_qty_total')) f('inv_qty_total').textContent=totQTotal.toLocaleString('id-ID');
+  if(f('inv_modal_total')) f('inv_modal_total').textContent=totModal>0?fmtRp(totModal):'—';
+  if(f('inv_jual_total')) f('inv_jual_total').textContent=totJual>0?fmtRp(totJual):'—';
+  if(f('inv_untung_total')) f('inv_untung_total').textContent=totUntung>0?fmtRp(totUntung):'—';
+  // Per-kategori
+  const katMap={};
+  active.forEach(item=>{
+    const k=item.kategori;
+    if(!katMap[k]) katMap[k]={count:0,qty:0,modal:0,jual:0};
+    katMap[k].count++; katMap[k].qty+=item.qTotal;
+    katMap[k].modal+=item.modalTotal; katMap[k].jual+=item.jualTotal;
+  });
+  const tb=document.getElementById('tbInvKat');
+  if(!tb) return;
+  const kats=Object.entries(katMap).sort((a,b)=>b[1].modal-a[1].modal);
+  tb.innerHTML=kats.map(([kat,d],i)=>{
+    const pct=totModal>0?(d.modal/totModal*100):0;
+    const rowBg=i%2===0?'#fff':'#f8fafc';
+    return `<tr style="background:${rowBg}">
+      <td><span class="badge-blue" style="font-size:.72rem">${kat.replace('PERLENGKAPAN ','')}</span></td>
+      <td class="tr num">${d.count}</td>
+      <td class="tr num">${d.qty.toLocaleString('id-ID')}</td>
+      <td class="tr num" style="color:#854d0e;font-weight:600">${d.modal>0?fmtRp(d.modal):'—'}</td>
+      <td class="tr num" style="color:#166534;font-weight:600">${d.jual>0?fmtRp(d.jual):'—'}</td>
+      <td class="tr num" style="color:#1d4ed8;font-weight:600">${(d.jual-d.modal)>0?fmtRp(d.jual-d.modal):'—'}</td>
+      <td class="tr num" style="color:#92400e">${pct.toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
+}
+
 function showTab(id,btn){
   document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
   btn.classList.add('active');
+  if(id==='inventori') filterInventori();
 }
 
 // Charts (named for period filter updates)
@@ -812,16 +1031,19 @@ function uploadStokFisik(files, jenis){
     const tryFinish=()=>{
       loaded++;
       if(loaded<total) return;
+      const n=Object.keys(map).length;
+      const lbl='✓ '+(jenis==='toko'?'Toko':'Gudang')+': '+n+' SKU'+(total>1?' ('+total+' file)':'');
       if(jenis==='toko'){
         STOK_TOKO=map;
         localStorage.setItem('stok_toko',JSON.stringify(map));
-        document.getElementById('stokTokoLabel').textContent='✓ Toko: '+Object.keys(map).length+' SKU ('+total+' file)';
+        ['stokTokoLabel','invTokoLabel'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=lbl; });
       } else {
         STOK_GUDANG=map;
         localStorage.setItem('stok_gudang',JSON.stringify(map));
-        document.getElementById('stokGudangLabel').textContent='✓ Gudang: '+Object.keys(map).length+' SKU ('+total+' file)';
+        ['stokGudangLabel','invGudangLabel'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=lbl; });
       }
       filterStok();
+      filterInventori();
     };
     Array.from(files).forEach(file=>{
       const reader=new FileReader();
@@ -887,8 +1109,8 @@ function getFinal(sku){ return localStorage.getItem(stokKey(sku))||''; }
 // Restore stok label on load
 (function(){
   const nt=Object.keys(STOK_TOKO).length, ng=Object.keys(STOK_GUDANG).length;
-  if(nt>0) setTimeout(()=>{ const el=document.getElementById('stokTokoLabel'); if(el) el.textContent='✓ Toko: '+nt+' SKU'; },100);
-  if(ng>0) setTimeout(()=>{ const el=document.getElementById('stokGudangLabel'); if(el) el.textContent='✓ Gudang: '+ng+' SKU'; },100);
+  if(nt>0) setTimeout(()=>{ ['stokTokoLabel','invTokoLabel'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent='✓ Toko: '+nt+' SKU'; }); },100);
+  if(ng>0) setTimeout(()=>{ ['stokGudangLabel','invGudangLabel'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent='✓ Gudang: '+ng+' SKU'; }); },100);
 })();
 
 function renderStok(data){
