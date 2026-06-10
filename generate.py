@@ -776,8 +776,9 @@ html = f"""<!DOCTYPE html>
       <thead><tr>
         <th style="position:sticky;left:0;z-index:3;background:#034543;min-width:38px">No</th>
         <th style="position:sticky;left:38px;z-index:3;background:#034543;min-width:90px">SKU</th>
-        <th style="position:sticky;left:128px;z-index:3;background:#034543;min-width:160px;border-right:2px solid #0a7874">Produk</th>
-        <th>Varian</th><th>Kategori</th>
+        <th style="position:sticky;left:128px;z-index:3;background:#034543;min-width:160px">Produk</th>
+        <th style="position:sticky;left:288px;z-index:3;background:#034543;min-width:100px;border-right:2px solid #0a7874">Varian</th>
+        <th>Kategori</th>
         <th class="tr">Avg/Bln</th>
         <th class="tr">Avg 3Bln Terakhir</th><th>Tren</th><th>Tren %</th>
         <th>Tipe</th>
@@ -1387,8 +1388,8 @@ function renderStok(data){{
     tb.innerHTML+=`<tr>
       <td class="tc" style="position:sticky;left:0;z-index:2;background:${{rowBg}};min-width:38px">${{i+1}}</td>
       <td style="position:sticky;left:38px;z-index:2;background:${{rowBg}};min-width:90px"><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${{s.sku}}</code></td>
-      <td style="position:sticky;left:128px;z-index:2;background:${{rowBg}};min-width:160px;border-right:2px solid #e2e8f0;font-weight:600"><strong>${{s.produk}}</strong></td>
-      <td>${{s.varian}}</td>
+      <td style="position:sticky;left:128px;z-index:2;background:${{rowBg}};min-width:160px;font-weight:600"><strong>${{s.produk}}</strong></td>
+      <td style="position:sticky;left:288px;z-index:2;background:${{rowBg}};min-width:100px;border-right:2px solid #e2e8f0">${{s.varian}}</td>
       <td><span class="badge-blue" style="font-size:.68rem">${{s.kategori.replace('PERLENGKAPAN ','')}}</span></td>
       <td class="tr num">${{s.avg_per_bulan}}</td>
       <td class="tr num">${{s.recent3_avg}}</td>
