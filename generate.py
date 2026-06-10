@@ -475,7 +475,7 @@ html = f"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Harmoni Analitik</title>
+<title>Harmoni Analitik Stok dan Penjualan</title>
 <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -550,7 +550,7 @@ html = f"""<!DOCTYPE html>
 
 <div class="header">
   <div>
-    <div class="header-logo">harmoni <span>· Analitik Penjualan</span></div>
+    <div class="header-logo">harmoni <span>· Analitik Stok dan Penjualan</span></div>
     <div class="sub">{bulan_labels[0] if bulan_labels else 'N/A'} – {bulan_labels[-1] if bulan_labels else 'N/A'} &nbsp;·&nbsp; {len(bulan_labels)} Bulan Data Aktual</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
