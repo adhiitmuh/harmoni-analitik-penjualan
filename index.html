@@ -1043,7 +1043,7 @@ function uploadStokFisik(files, jenis){
         ['stokGudangLabel','invGudangLabel'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=lbl; });
       }
       // Sync ke Firestore agar semua user (owner/admin) lihat data terbaru
-      firebase.firestore().collection('settings').doc('stok_fisik').set({
+      _app.firestore().collection('settings').doc('stok_fisik').set({
         [jenis]: map,
         [jenis+'_updated_at']: firebase.firestore.FieldValue.serverTimestamp(),
         [jenis+'_updated_by']: _currentUserName || 'unknown'
@@ -1251,9 +1251,9 @@ const _fbCfg = {
   messagingSenderId: '825719884876',
   appId: '1:825719884876:web:a8fd78d382e0f98cf6b8e9'
 };
-if (!firebase.apps.length) firebase.initializeApp(_fbCfg);
+const _app = firebase.apps.find(a => a.name === 'harmoni-auth') || firebase.initializeApp(_fbCfg, 'harmoni-auth');
 
-firebase.auth().onAuthStateChanged(async user => {
+_app.auth().onAuthStateChanged(async user => {
   const overlay   = document.getElementById('auth-overlay');
   const elLoading = document.getElementById('auth-loading');
   const elNoLogin = document.getElementById('auth-no-login');
@@ -1265,7 +1265,7 @@ firebase.auth().onAuthStateChanged(async user => {
     return;
   }
   try {
-    const snap    = await firebase.firestore().collection('users').doc(user.uid).get();
+    const snap    = await _app.firestore().collection('users').doc(user.uid).get();
     const data    = snap.exists ? snap.data() : null;
     const isOwner = data?.role === 'owner';
     const appData = data?.apps?.harmoni_analitik;
@@ -1284,7 +1284,7 @@ firebase.auth().onAuthStateChanged(async user => {
 
     // Load stok fisik dari Firestore — sync antar device/user
     try {
-      const stokSnap = await firebase.firestore().collection('settings').doc('stok_fisik').get();
+      const stokSnap = await _app.firestore().collection('settings').doc('stok_fisik').get();
       if (stokSnap.exists) {
         const sd = stokSnap.data();
         if (sd.toko && Object.keys(sd.toko).length) {
