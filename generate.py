@@ -481,7 +481,7 @@ html = f"""<!DOCTYPE html>
 <style>
   :root{{--g:#034543;--g2:#055a57;--g3:#0a7874;--g4:#1a8b88;--beige:#FFFBD5;--beige2:#f5f0b8;--white:#FAFAFA;--black:#282828;--gray:#64748b}}
   *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{font-family:'Raleway',sans-serif;background:var(--white);color:var(--black)}}
+  body{{font-family:'Raleway',sans-serif;background:var(--white);color:var(--black);overflow-x:hidden}}
   .header{{background:linear-gradient(135deg,var(--g) 0%,var(--g2) 50%,var(--g3) 100%);color:white;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(3,69,67,.3)}}
   .header-logo{{font-size:1.6rem;font-weight:800;color:white;letter-spacing:-.5px;line-height:1}}
   .header-logo span{{font-size:.8rem;font-weight:400;opacity:.7;margin-left:4px}}
@@ -789,7 +789,9 @@ html = f"""<!DOCTYPE html>
         <th class="tr" style="background:#fef2f2;color:#dc2626">Perlu Beli</th>
         <th>Terakhir Terjual</th>
         <th style="background:#dcfce7;color:#166534;min-width:90px">Final Order</th>
-        <th class="tr" style="background:#fef9c3;color:#854d0e;min-width:110px">Est. Budget</th>
+        <th class="tr" style="background:#fef9c3;color:#854d0e;min-width:110px">Est. Modal</th>
+        <th class="tr" style="background:#dcfce7;color:#166534;min-width:110px">Est. Nilai Jual</th>
+        <th class="tr" style="background:#eff6ff;color:#1d4ed8;min-width:110px">Est. Untung</th>
       </tr></thead>
       <tbody id="tbStok"></tbody>
     </table></div>
@@ -1318,25 +1320,24 @@ function uploadStokFisik(files, jenis){{
   s.onload=doUpload; document.head.appendChild(s);
 }}
 
-function updateBudgetRow(input, sku, hpp, hju){{
+function updateBudgetRow(input, sku, hpp, hju, perlBeli){{
   const val=Number(input.value)||0;
+  const qty=val>0?val:(perlBeli||0);
+  const bv=qty*hpp, jv=qty*hju, uv=jv-bv;
   const sid=sku.replace(/[^a-zA-Z0-9]/g,'_');
-  const el=document.getElementById('budget_'+sid);
+  const bel=document.getElementById('budget_'+sid);
   const jel=document.getElementById('jual_'+sid);
-  if(el) el.textContent=val>0?fmtRp(val*hpp):'—';
-  if(jel) jel.textContent=val>0?String(val*hju):'0';
+  const uel=document.getElementById('untung_'+sid);
+  if(bel){{ bel.innerHTML=bv>0?fmtRp(bv):(hpp===0?'<span style="color:#94a3b8;font-size:.72rem">HPP?</span>':'—'); bel.dataset.raw=String(bv); }}
+  if(jel){{ jel.innerHTML=jv>0?fmtRp(jv):(hju===0?'<span style="color:#94a3b8;font-size:.72rem">Harga?</span>':'—'); jel.dataset.raw=String(jv); }}
+  if(uel){{ uel.textContent=uv>0?fmtRp(uv):'—'; uel.dataset.raw=String(uv); }}
   updateTotalBudget();
 }}
 
 function updateTotalBudget(){{
   let totalModal=0, totalJual=0;
-  document.querySelectorAll('[id^="budget_"]').forEach(el=>{{
-    const v=el.textContent;
-    if(v&&v!=='—') totalModal+=parseFloat(v.replace(/[^0-9]/g,''));
-  }});
-  document.querySelectorAll('[id^="jual_"]').forEach(el=>{{
-    totalJual+=Number(el.textContent)||0;
-  }});
+  document.querySelectorAll('[id^="budget_"]').forEach(el=>{{ totalModal+=Number(el.dataset.raw)||0; }});
+  document.querySelectorAll('[id^="jual_"]').forEach(el=>{{ totalJual+=Number(el.dataset.raw)||0; }});
   const profit=totalJual-totalModal;
   const margin=totalJual>0?(profit/totalJual*100):0;
   const bEl=document.getElementById('totalBudgetVal');
@@ -1401,11 +1402,12 @@ function renderStok(data){{
       <td class="tr num" style="font-weight:700;color:#dc2626">${{perlBeli>0?perlBeli:(stTotal>0?'✓':'—')}}</td>
       <td class="tc" style="font-size:.78rem;color:#64748b">${{s.last_sold||'—'}}</td>
       <td class="tc"><input type="number" min="0" id="${{skuId}}" value="${{savedFinal}}"
-        oninput="saveFinal('${{s.sku}}',this.value);updateBudgetRow(this,'${{s.sku}}',${{hpp}},${{harga}})"
+        oninput="saveFinal('${{s.sku}}',this.value);updateBudgetRow(this,'${{s.sku}}',${{hpp}},${{harga}},${{perlBeli}})"
         style="width:76px;padding:4px 8px;border:1.5px solid #86efac;border-radius:6px;text-align:right;font-family:'Plus Jakarta Sans',sans-serif;font-size:.85rem;font-weight:600;color:#166534;background:#f0fdf4;outline:none"
         placeholder="0"></td>
-      <td class="tr num" id="budget_${{s.sku.replace(/[^a-zA-Z0-9]/g,'_')}}" style="color:#854d0e;font-weight:700">${{estBudget>0?fmtRp(estBudget):'—'}}</td>
-      <span id="jual_${{s.sku.replace(/[^a-zA-Z0-9]/g,'_')}}" style="display:none">${{estJual}}</span>
+      <td class="tr num" id="budget_${{s.sku.replace(/[^a-zA-Z0-9]/g,'_')}}" data-raw="${{estBudget}}" style="color:#854d0e;font-weight:700">${{estBudget>0?fmtRp(estBudget):hpp===0?'<span style=\\'color:#94a3b8;font-size:.72rem\\'>HPP?</span>':'—'}}</td>
+      <td class="tr num" id="jual_${{s.sku.replace(/[^a-zA-Z0-9]/g,'_')}}" data-raw="${{estJual}}" style="color:#166534;font-weight:700">${{estJual>0?fmtRp(estJual):harga===0?'<span style=\\'color:#94a3b8;font-size:.72rem\\'>Harga?</span>':'—'}}</td>
+      <td class="tr num" id="untung_${{s.sku.replace(/[^a-zA-Z0-9]/g,'_')}}" data-raw="${{estJual-estBudget}}" style="color:#1d4ed8;font-weight:700">${{(estJual-estBudget)>0?fmtRp(estJual-estBudget):'—'}}</td>
     </tr>`;
   }});
 }}
@@ -1435,7 +1437,7 @@ function filterStok(){{
 }}
 
 function stokTableData(){{
-  const headers=['No','SKU','Produk','Varian','Kategori','Total Qty','Avg/Bln','Avg 3Bln Terakhir','Tren','Tren %','Tipe','Puncak','Rek. Stok','Stok Toko','Stok Gudang','Total Stok','Perlu Beli','Terakhir Terjual','Final Order','Est. Budget'];
+  const headers=['No','SKU','Produk','Varian','Kategori','Total Qty','Avg/Bln','Avg 3Bln Terakhir','Tren','Tren %','Tipe','Puncak','Rek. Stok','Stok Toko','Stok Gudang','Total Stok','Perlu Beli','Terakhir Terjual','Final Order','Est. Modal','Est. Nilai Jual','Est. Untung'];
   const rows=STOK_DATA.map((s,i)=>{{
     const tpct=(s.trend_pct>0?'+':'')+s.trend_pct.toFixed(0)+'%';
     const final=getFinal(s.sku);
@@ -1446,8 +1448,10 @@ function stokTableData(){{
     const stTotal=stToko+stGudang;
     const perlBeli=Math.max(0,s.rek_qty-stTotal);
     const hpp=s.hpp_unit||0;
-    const budget=finalNum>0?finalNum*hpp:perlBeli*hpp;
-    return [i+1,s.sku,s.produk,s.varian,s.kategori,s.total_qty,s.avg_per_bulan,s.recent3_avg,s.trend,tpct,tipe,s.peak_month||'',s.rek_qty,stToko||'',stGudang||'',stTotal||'',perlBeli||'',s.last_sold||'',finalNum||'',budget||''];
+    const harga=s.harga_unit||0;
+    const qty4c=finalNum>0?finalNum:perlBeli;
+    const modal=qty4c*hpp, jual=qty4c*harga, untung=jual-modal;
+    return [i+1,s.sku,s.produk,s.varian,s.kategori,s.total_qty,s.avg_per_bulan,s.recent3_avg,s.trend,tpct,tipe,s.peak_month||'',s.rek_qty,stToko||'',stGudang||'',stTotal||'',perlBeli||'',s.last_sold||'',finalNum||'',modal||'',jual||'',untung||''];
   }});
   return {{headers,rows}};
 }}
