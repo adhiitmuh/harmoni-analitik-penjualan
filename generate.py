@@ -555,11 +555,6 @@ html = f"""<!DOCTYPE html>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
     <div class="badge">Update: {generated_at}</div>
-    <label id="uploadBtn" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;padding:5px 14px;border-radius:20px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:'Raleway',sans-serif;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.25)'" onmouseout="this.style.background='rgba(255,255,255,.15)'">
-      📤 Perbarui Data
-      <input type="file" id="olseraInput" accept=".xlsx" multiple style="display:none" onchange="handleOlseraUpload(this.files)">
-    </label>
-    <div id="uploadStatus" style="font-size:.7rem;color:rgba(255,255,255,.75)"></div>
   </div>
 </div>
 
@@ -844,9 +839,14 @@ html = f"""<!DOCTYPE html>
     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
       <span>📦 Rekomendasi Stok Per SKU</span>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px">
+        <label style="padding:6px 14px;background:#034543;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">
+          📤 Upload Data Penjualan
+          <input type="file" id="olseraInput" accept=".xlsx" multiple style="display:none" onchange="handleOlseraUpload(this.files)">
+        </label>
+        <span id="uploadStatus" style="font-size:.75rem;color:#64748b;font-weight:500"></span>
         <span id="stokTokoLabel" style="font-size:.75rem;color:#0369a1;font-weight:600;padding:4px 10px;background:#eff6ff;border-radius:8px"></span>
         <span id="stokGudangLabel" style="font-size:.75rem;color:#7c3aed;font-weight:600;padding:4px 10px;background:#f3e8ff;border-radius:8px"></span>
-        <button onclick="downloadStokCSV()" style="padding:6px 14px;background:#034543;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">⬇ CSV</button>
+        <button onclick="downloadStokCSV()" style="padding:6px 14px;background:#475569;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">⬇ CSV</button>
         <button onclick="downloadStokXLSX()" style="padding:6px 14px;background:#166534;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Raleway',sans-serif">⬇ Excel</button>
       </div>
       <div class="filter-row" style="margin:6px 0 0;gap:8px">
