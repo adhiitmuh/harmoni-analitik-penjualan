@@ -1024,6 +1024,7 @@ function rekBadge(qty){
 // ── Stok fisik (toko & gudang) ───────────────────────────────────────────────
 let STOK_TOKO   = JSON.parse(localStorage.getItem('stok_toko')||'{}');
 let STOK_GUDANG = JSON.parse(localStorage.getItem('stok_gudang')||'{}');
+let _currentUserName = '';
 
 function uploadStokFisik(files, jenis){
   if(!files||!files.length) return;
@@ -1045,6 +1046,12 @@ function uploadStokFisik(files, jenis){
         localStorage.setItem('stok_gudang',JSON.stringify(map));
         ['stokGudangLabel','invGudangLabel'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=lbl; });
       }
+      // Sync ke Firestore agar semua user (owner/admin) lihat data terbaru
+      firebase.firestore().collection('settings').doc('stok_fisik').set({
+        [jenis]: map,
+        [jenis+'_updated_at']: firebase.firestore.FieldValue.serverTimestamp(),
+        [jenis+'_updated_by']: _currentUserName || 'unknown'
+      }, { merge: true }).catch(e => console.error('Sync Firestore gagal:', e));
       filterStok();
       filterInventori();
     };
@@ -1274,14 +1281,43 @@ firebase.auth().onAuthStateChanged(async user => {
     }
 
     overlay.style.display = 'none';
+    _currentUserName = data.nama || user.email;
     const role = appData.role || 'operator';
-    document.querySelector('.header .badge').textContent = (data.nama || user.email) + ' · ' + role;
+    document.querySelector('.header .badge').textContent = _currentUserName + ' · ' + role;
     applyRole(role);
+
+    // Load stok fisik dari Firestore — sync antar device/user
+    try {
+      const stokSnap = await firebase.firestore().collection('settings').doc('stok_fisik').get();
+      if (stokSnap.exists) {
+        const sd = stokSnap.data();
+        if (sd.toko && Object.keys(sd.toko).length) {
+          STOK_TOKO = sd.toko;
+          localStorage.setItem('stok_toko', JSON.stringify(STOK_TOKO));
+          const nt = Object.keys(STOK_TOKO).length;
+          const lbl = '✓ Toko: ' + nt + ' SKU' + (sd.toko_updated_by ? ' · ' + sd.toko_updated_by : '') + (sd.toko_updated_at ? ' · ' + _fmtTs(sd.toko_updated_at) : '');
+          ['stokTokoLabel','invTokoLabel'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = lbl; });
+        }
+        if (sd.gudang && Object.keys(sd.gudang).length) {
+          STOK_GUDANG = sd.gudang;
+          localStorage.setItem('stok_gudang', JSON.stringify(STOK_GUDANG));
+          const ng = Object.keys(STOK_GUDANG).length;
+          const lbl = '✓ Gudang: ' + ng + ' SKU' + (sd.gudang_updated_by ? ' · ' + sd.gudang_updated_by : '') + (sd.gudang_updated_at ? ' · ' + _fmtTs(sd.gudang_updated_at) : '');
+          ['stokGudangLabel','invGudangLabel'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = lbl; });
+        }
+      }
+    } catch(e) { console.error('Gagal load stok dari Firestore:', e); }
   } catch(e) {
     elLoading.style.display = 'none';
     elDenied.style.display  = 'block';
   }
 });
+
+function _fmtTs(ts) {
+  if (!ts || !ts.toDate) return '';
+  const d = ts.toDate();
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+}
 
 function applyRole(role) {
   if (role === 'admin') return;
