@@ -1026,6 +1026,7 @@ function rebuildAllData(rawRows){{
 
   applyPeriodFilter(FILTERED_IDX);
   renderStok(STOK_DATA);
+  updateTotalBudget();
   renderMas(MASALAH_SKU);
 }}
 
@@ -1178,7 +1179,7 @@ function showTab(id,btn){{
 const cTren = new Chart(document.getElementById('cTren'),{{type:'line',data:{{labels:BULAN,datasets:[{{label:'Total Omzet',data:TOTAL_BULANAN,borderColor:'#034543',backgroundColor:'rgba(3,69,67,.08)',fill:true,tension:.4,pointRadius:4}}]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}},tooltip:{{callbacks:{{label:c=>' '+fmtM(c.raw)}}}}}},scales:{{y:{{ticks:{{callback:v=>fmtM(v)}},grid:{{color:'#f1f5f9'}}}},x:{{grid:{{display:false}}}}}}}}}});
 const cDonut = new Chart(document.getElementById('cDonut'),{{type:'doughnut',data:{{labels:RINGKASAN.slice(0,6).map(r=>r.nama.replace('PERLENGKAPAN ','').replace('SERAGAM ','')),datasets:[{{data:RINGKASAN.slice(0,6).map(r=>r.omzet),backgroundColor:COLORS,borderWidth:2,borderColor:'#fff'}}]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{position:'right',labels:{{font:{{size:10}},padding:10}}}},tooltip:{{callbacks:{{label:c=>' '+fmtM(c.raw)}}}}}},cutout:'60%'}}}});
 const cDivisiBar = new Chart(document.getElementById('cDivisiBar'),{{type:'bar',data:{{labels:BULAN,datasets:[{{label:'Young Harmonis',data:YH_OMZET,backgroundColor:'rgba(3,69,67,.85)',borderRadius:4}},{{label:'Custom Orders',data:CUST_OMZET,backgroundColor:'rgba(194,160,0,.8)',borderRadius:4}}]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{tooltip:{{callbacks:{{label:c=>' '+fmtM(c.raw)}}}}}},scales:{{x:{{stacked:true,grid:{{display:false}}}},y:{{stacked:true,ticks:{{callback:v=>fmtM(v)}},grid:{{color:'#f1f5f9'}}}}}}}}}});
-const cKatBar = new Chart(document.getElementById('cKatBar'),{{type:'bar',indexAxis:'y',data:{{labels:RINGKASAN.slice(0,6).map(r=>r.nama.length>18?r.nama.slice(0,18)+'…':r.nama),datasets:[{{label:'Omzet',data:RINGKASAN.slice(0,6).map(r=>r.omzet),backgroundColor:COLORS,borderRadius:6}}]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}},tooltip:{{callbacks:{{label:c=>' '+fmtM(c.raw)}}}}}},scales:{{x:{{ticks:{{callback:v=>fmtM(v)}},grid:{{color:'#f1f5f9'}}}},y:{{grid:{{display:false}}}}}}}}}});
+const cKatBar = new Chart(document.getElementById('cKatBar'),{{type:'bar',data:{{labels:RINGKASAN.slice(0,6).map(r=>r.nama.length>18?r.nama.slice(0,18)+'…':r.nama),datasets:[{{label:'Omzet',data:RINGKASAN.slice(0,6).map(r=>r.omzet),backgroundColor:COLORS,borderRadius:6}}]}},options:{{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}},tooltip:{{callbacks:{{label:c=>' '+fmtM(c.raw)}}}}}},scales:{{x:{{ticks:{{callback:v=>fmtM(v)}},grid:{{color:'#f1f5f9'}}}},y:{{grid:{{display:false}}}}}}}}}});
 const cDivisiLine = new Chart(document.getElementById('cDivisiLine'),{{type:'line',data:{{labels:BULAN,datasets:[{{label:'Young Harmonis',data:YH_OMZET,borderColor:'#034543',backgroundColor:'rgba(3,69,67,.08)',fill:true,tension:.4,pointRadius:4}},{{label:'Custom Orders',data:CUST_OMZET,borderColor:'#c2a000',backgroundColor:'rgba(194,160,0,.07)',fill:true,tension:.4,pointRadius:4}}]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{tooltip:{{callbacks:{{label:c=>' '+fmtM(c.raw)}}}}}},scales:{{y:{{ticks:{{callback:v=>fmtM(v)}},grid:{{color:'#f1f5f9'}}}},x:{{grid:{{display:false}}}}}}}}}});
 
 let cTopOmzet = new Chart(document.getElementById('cTopOmzet'),{{type:'bar',data:{{labels:[],datasets:[{{label:'Omzet',data:[],backgroundColor:'#034543',borderRadius:4}}]}},options:{{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}},tooltip:{{callbacks:{{label:c=>' '+fmtM(c.raw)}}}}}},scales:{{x:{{ticks:{{callback:v=>fmtM(v)}},grid:{{color:'#f1f5f9'}}}},y:{{grid:{{display:false}},ticks:{{font:{{size:10}}}}}}}}}}}});
@@ -1412,6 +1413,7 @@ function renderStok(data){{
   }});
 }}
 renderStok(STOK_DATA);
+updateTotalBudget();
 
 function filterStok(){{
   const q=document.getElementById('stokSearch').value.toLowerCase();
@@ -1434,6 +1436,7 @@ function filterStok(){{
     return true;
   }});
   renderStok(d);
+  updateTotalBudget();
 }}
 
 function stokTableData(){{
