@@ -1272,9 +1272,10 @@ firebase.auth().onAuthStateChanged(async user => {
   try {
     const snap    = await firebase.firestore().collection('users').doc(user.uid).get();
     const data    = snap.exists ? snap.data() : null;
+    const isOwner = data?.role === 'owner';
     const appData = data?.apps?.harmoni_analitik;
 
-    if (!data?.aktif || !appData?.akses) {
+    if (!data?.aktif || (!isOwner && !appData?.akses)) {
       elLoading.style.display = 'none';
       elDenied.style.display  = 'block';
       return;
@@ -1282,7 +1283,7 @@ firebase.auth().onAuthStateChanged(async user => {
 
     overlay.style.display = 'none';
     _currentUserName = data.nama || user.email;
-    const role = appData.role || 'operator';
+    const role = isOwner ? 'admin' : (appData.role || 'operator');
     document.querySelector('.header .badge').textContent = _currentUserName + ' · ' + role;
     applyRole(role);
 
