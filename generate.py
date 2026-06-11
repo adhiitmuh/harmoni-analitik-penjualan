@@ -1331,12 +1331,11 @@ function renderInventori(items){{
   footer.style.display='block'; katDiv.style.display='block';
   cnt.textContent=items.length+' produk ditampilkan';
   adjustTableWrapHeight();
-  tbody.innerHTML='';
+  const rows=[];
   items.forEach((item,i)=>{{
     const excl=isInvExcluded(item.sku);
     const rowBg=i%2===0?'#fff':'#f8fafc';
-    const sid=item.sku.replace(/[^a-zA-Z0-9]/g,'_');
-    tbody.innerHTML+=`<tr style="opacity:${{excl?'0.35':'1'}}">
+    rows.push(`<tr style="opacity:${{excl?'0.35':'1'}}">
       <td class="tc" style="position:sticky;left:0;z-index:2;background:${{rowBg}};min-width:38px">${{i+1}}</td>
       <td style="position:sticky;left:38px;z-index:2;background:${{rowBg}};min-width:90px"><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${{item.sku}}</code></td>
       <td style="position:sticky;left:128px;z-index:2;background:${{rowBg}};min-width:160px;font-weight:600">${{item.produk}}</td>
@@ -1353,8 +1352,9 @@ function renderInventori(items){{
       <td class="tc"><button onclick="toggleInvExclude('${{item.sku}}')"
         style="padding:2px 10px;border-radius:12px;font-size:.72rem;font-weight:700;cursor:pointer;border:none;
         background:${{excl?'#fee2e2':'#f0fdf4'}};color:${{excl?'#dc2626':'#166534'}}">${{excl?'Excluded':'Sertakan'}}</button></td>
-    </tr>`;
+    </tr>`);
   }});
+  tbody.innerHTML=rows.join('');
   updateInventoriSummary(items);
 }}
 
@@ -1637,8 +1637,8 @@ function getFinal(sku){{ return localStorage.getItem(stokKey(sku))||''; }}
 function renderStok(data){{
   const tb=document.getElementById('tbStok');
   const cnt=document.getElementById('stokCount');
-  tb.innerHTML='';
   cnt.textContent=data.length+' produk ditampilkan';
+  const stokRows=[];
   data.forEach((s,i)=>{{
     const tpct=s.trend_pct>0?'+'+s.trend_pct.toFixed(0)+'%':s.trend_pct.toFixed(0)+'%';
     const tcolor=s.trend==='naik'?'#15803d':s.trend==='turun'?'#dc2626':'#854d0e';
@@ -1656,7 +1656,7 @@ function renderStok(data){{
     const estJual=qty4calc*harga;
     const stOk=stTotal>=s.rek_qty;
     const rowBg=i%2===0?'#fff':'#f8fafc';
-    tb.innerHTML+=`<tr>
+    stokRows.push(`<tr>
       <td class="tc" style="position:sticky;left:0;z-index:2;background:${{rowBg}};min-width:38px">${{i+1}}</td>
       <td style="position:sticky;left:38px;z-index:2;background:${{rowBg}};min-width:90px"><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${{s.sku}}</code></td>
       <td style="position:sticky;left:128px;z-index:2;background:${{rowBg}};min-width:160px;font-weight:600"><strong>${{s.produk}}</strong></td>
@@ -1681,8 +1681,9 @@ function renderStok(data){{
       <td class="tr num sc-smodal" id="budget_${{s.sku.replace(/[^a-zA-Z0-9]/g,'_')}}" data-raw="${{estBudget}}" style="color:#854d0e;font-weight:700">${{estBudget>0?fmtRp(estBudget):hpp===0?'<span style=\\'color:#94a3b8;font-size:.72rem\\'>HPP?</span>':'—'}}</td>
       <td class="tr num sc-sjual" id="jual_${{s.sku.replace(/[^a-zA-Z0-9]/g,'_')}}" data-raw="${{estJual}}" style="color:#166534;font-weight:700">${{estJual>0?fmtRp(estJual):harga===0?'<span style=\\'color:#94a3b8;font-size:.72rem\\'>Harga?</span>':'—'}}</td>
       <td class="tr num sc-suntung" id="untung_${{s.sku.replace(/[^a-zA-Z0-9]/g,'_')}}" data-raw="${{estJual-estBudget}}" style="color:#1d4ed8;font-weight:700">${{(estJual-estBudget)>0?fmtRp(estJual-estBudget):'—'}}</td>
-    </tr>`;
+    </tr>`);
   }});
+  tb.innerHTML=stokRows.join('');
 }}
 renderStok(STOK_DATA);
 updateTotalBudget();
