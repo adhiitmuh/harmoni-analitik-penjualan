@@ -754,9 +754,9 @@ html = f"""<!DOCTYPE html>
       <div style="font-weight:600">Belum ada data stok</div>
       <div style="font-size:.82rem;margin-top:4px">Upload file Olsera toko dan/atau gudang dulu</div>
     </div>
-    <div class="table-wrap" id="invTableWrap" style="display:none;border-collapse:separate;border-spacing:0">
+    <div class="table-wrap" id="invTableWrap" style="display:none;max-height:70vh;overflow:auto">
     <table style="border-collapse:separate;border-spacing:0">
-      <thead><tr>
+      <thead style="position:-webkit-sticky;position:sticky;top:0;z-index:4"><tr>
         <th style="position:sticky;left:0;z-index:3;background:#034543;min-width:38px">No</th>
         <th style="position:sticky;left:38px;z-index:3;background:#034543;min-width:90px">SKU</th>
         <th style="position:sticky;left:128px;z-index:3;background:#034543;min-width:160px">Produk</th>
@@ -870,8 +870,8 @@ html = f"""<!DOCTYPE html>
       </div>
     </div>
     <div id="stokCount" style="font-size:.78rem;color:#64748b;margin-bottom:10px"></div>
-    <div class="table-wrap"><table style="border-collapse:separate;border-spacing:0">
-      <thead><tr>
+    <div class="table-wrap" id="stokTableWrap" style="max-height:70vh;overflow:auto"><table style="border-collapse:separate;border-spacing:0">
+      <thead style="position:-webkit-sticky;position:sticky;top:0;z-index:4"><tr>
         <th style="position:sticky;left:0;z-index:3;background:#034543;min-width:38px">No</th>
         <th style="position:sticky;left:38px;z-index:3;background:#034543;min-width:90px">SKU</th>
         <th style="position:sticky;left:128px;z-index:3;background:#034543;min-width:160px">Produk</th>
@@ -1294,6 +1294,7 @@ function renderInventori(items){{
   wrap.style.display='block'; empty.style.display='none';
   footer.style.display='block'; katDiv.style.display='block';
   cnt.textContent=items.length+' produk ditampilkan';
+  adjustTableWrapHeight();
   tbody.innerHTML='';
   items.forEach((item,i)=>{{
     const excl=isInvExcluded(item.sku);
@@ -1387,12 +1388,24 @@ function updateInventoriSummary(items){{
   }}).join('');
 }}
 
+function adjustTableWrapHeight(){{
+  ['invTableWrap','stokTableWrap'].forEach(function(wid){{
+    var wrap=document.getElementById(wid);
+    if(!wrap||wrap.style.display==='none')return;
+    var rect=wrap.getBoundingClientRect();
+    if(rect.top>50)wrap.style.maxHeight=Math.max(200,window.innerHeight-rect.top-16)+'px';
+  }});
+}}
+window.addEventListener('resize',adjustTableWrapHeight);
+
 function showTab(id,btn){{
   document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
   btn.classList.add('active');
+  window.scrollTo(0,0);
   if(id==='inventori') filterInventori();
+  if(id==='inventori'||id==='stok') setTimeout(adjustTableWrapHeight,0);
 }}
 
 // Charts (named for period filter updates)
