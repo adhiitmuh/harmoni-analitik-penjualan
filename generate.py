@@ -539,6 +539,7 @@ html = f"""<!DOCTYPE html>
   .bRek{{background:linear-gradient(135deg,var(--beige),var(--beige2));color:var(--g);padding:3px 10px;border-radius:6px;font-weight:800;font-size:.8rem;border:1px solid rgba(3,69,67,.15)}}
   .gen-info{{text-align:right;font-size:.7rem;color:#94a3b8;padding:6px 24px 16px}}
   .sc-hide{{display:none!important}}
+  #stokTableWrap.stok-hide-skat .sc-skat,#stokTableWrap.stok-hide-savg .sc-savg,#stokTableWrap.stok-hide-savg3 .sc-savg3,#stokTableWrap.stok-hide-strnd .sc-strnd,#stokTableWrap.stok-hide-strndp .sc-strndp,#stokTableWrap.stok-hide-stipe .sc-stipe,#stokTableWrap.stok-hide-sqty .sc-sqty,#stokTableWrap.stok-hide-srek .sc-srek,#stokTableWrap.stok-hide-stoko .sc-stoko,#stokTableWrap.stok-hide-sgdng .sc-sgdng,#stokTableWrap.stok-hide-stotal .sc-stotal,#stokTableWrap.stok-hide-sbeli .sc-sbeli,#stokTableWrap.stok-hide-slast .sc-slast,#stokTableWrap.stok-hide-sfinal .sc-sfinal,#stokTableWrap.stok-hide-smodal .sc-smodal,#stokTableWrap.stok-hide-sjual .sc-sjual,#stokTableWrap.stok-hide-suntung .sc-suntung{{display:none!important}}
   #stokKolomPanel{{display:none;position:absolute;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,.14);min-width:220px;right:0;top:calc(100% + 4px)}}
   #stokKolomPanel label{{display:flex;align-items:center;gap:7px;font-size:.79rem;padding:2px 0;cursor:pointer;color:#334155;user-select:none}}
   #stokKolomPanel .kp-group{{font-size:.67rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 2px;padding-top:6px;border-top:1px solid #f1f5f9}}
@@ -1720,9 +1721,10 @@ document.addEventListener('click',function(e){{
   if(p&&!p.contains(e.target)&&e.target.id!=='btnStokKolom')p.style.display='none';
 }});
 function toggleStokCol(key,visible){{
-  document.querySelectorAll('.sc-'+key).forEach(function(el){{
-    el.style.display=visible?'':'none';
-  }});
+  const wrap=document.getElementById('stokTableWrap');
+  if(!wrap)return;
+  if(visible)wrap.classList.remove('stok-hide-'+key);
+  else wrap.classList.add('stok-hide-'+key);
 }}
 function stokKolomAll(visible){{
   document.querySelectorAll('#stokKolomPanel input[type=checkbox]').forEach(function(cb){{
