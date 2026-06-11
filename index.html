@@ -66,6 +66,11 @@
   .filter-row select:focus{border-color:var(--g)}
   .bRek{background:linear-gradient(135deg,var(--beige),var(--beige2));color:var(--g);padding:3px 10px;border-radius:6px;font-weight:800;font-size:.8rem;border:1px solid rgba(3,69,67,.15)}
   .gen-info{text-align:right;font-size:.7rem;color:#94a3b8;padding:6px 24px 16px}
+  .sc-hide{display:none!important}
+  #stokKolomPanel{display:none;position:absolute;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,.14);min-width:220px;right:0;top:calc(100% + 4px)}
+  #stokKolomPanel label{display:flex;align-items:center;gap:7px;font-size:.79rem;padding:2px 0;cursor:pointer;color:#334155;user-select:none}
+  #stokKolomPanel .kp-group{font-size:.67rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 2px;padding-top:6px;border-top:1px solid #f1f5f9}
+  #stokKolomPanel .kp-group:first-of-type{margin-top:0;border-top:none}
   .period-bar{background:white;border-bottom:1px solid rgba(3,69,67,.1);padding:8px 24px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:52px;z-index:99}
   .period-bar span{font-size:.75rem;font-weight:600;color:#94a3b8;margin-right:2px;white-space:nowrap}
   .pbtn{padding:4px 13px;border-radius:20px;border:1.5px solid rgba(3,69,67,.25);background:white;font-size:.75rem;font-weight:600;color:var(--g);cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
@@ -82,7 +87,7 @@
     <div class="sub">Jan-25 – Feb-26 &nbsp;·&nbsp; 14 Bulan Data Aktual</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-    <div class="badge">Update: 12 Jun 2026 06:27</div>
+    <div class="badge">Update: 12 Jun 2026 06:36</div>
   </div>
 </div>
 
@@ -377,7 +382,7 @@
         <button onclick="downloadStokCSV()" style="padding:6px 14px;background:#475569;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">⬇ CSV</button>
         <button onclick="downloadStokXLSX()" style="padding:6px 14px;background:#166534;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">⬇ Excel</button>
       </div>
-      <div class="filter-row" style="margin:6px 0 0;gap:8px">
+      <div class="filter-row" style="margin:6px 0 0;gap:8px;position:relative">
         <input id="stokSearch" type="text" placeholder="Cari produk..." oninput="filterStok()" style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.82rem;width:200px">
         <select id="stokBeliFilter" onchange="filterStok()">
           <option value="">Semua</option>
@@ -395,6 +400,36 @@
           <option value="turun">📉 Tren Turun</option>
           <option value="musiman">🗓 Musiman</option>
         </select>
+        <button id="btnStokKolom" onclick="toggleStokKolomPanel(event)" style="padding:6px 12px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">⚙ Kolom</button>
+        <div id="stokKolomPanel">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-size:.8rem;font-weight:700;color:#1e293b">Tampilkan Kolom</span>
+            <div style="display:flex;gap:5px">
+              <button onclick="stokKolomAll(true)" style="font-size:.7rem;padding:2px 8px;border:1px solid #e2e8f0;border-radius:5px;cursor:pointer;background:#f8fafc;color:#475569">Semua</button>
+              <button onclick="stokKolomAll(false)" style="font-size:.7rem;padding:2px 8px;border:1px solid #e2e8f0;border-radius:5px;cursor:pointer;background:#f8fafc;color:#475569">Sembunyikan</button>
+            </div>
+          </div>
+          <div class="kp-group">Analisis</div>
+          <label><input type="checkbox" data-col="skat" checked onchange="toggleStokCol('skat',this.checked)"> Kategori</label>
+          <label><input type="checkbox" data-col="savg" checked onchange="toggleStokCol('savg',this.checked)"> Avg/Bln</label>
+          <label><input type="checkbox" data-col="savg3" checked onchange="toggleStokCol('savg3',this.checked)"> Avg 3Bln Terakhir</label>
+          <label><input type="checkbox" data-col="strnd" checked onchange="toggleStokCol('strnd',this.checked)"> Tren</label>
+          <label><input type="checkbox" data-col="strndp" checked onchange="toggleStokCol('strndp',this.checked)"> Tren %</label>
+          <label><input type="checkbox" data-col="stipe" checked onchange="toggleStokCol('stipe',this.checked)"> Tipe</label>
+          <label><input type="checkbox" data-col="sqty" checked onchange="toggleStokCol('sqty',this.checked)"> Total Qty Terjual</label>
+          <div class="kp-group">Stok</div>
+          <label><input type="checkbox" data-col="srek" checked onchange="toggleStokCol('srek',this.checked)"> Rek. Stok</label>
+          <label><input type="checkbox" data-col="stoko" checked onchange="toggleStokCol('stoko',this.checked)"> Stok Toko</label>
+          <label><input type="checkbox" data-col="sgdng" checked onchange="toggleStokCol('sgdng',this.checked)"> Stok Gudang</label>
+          <label><input type="checkbox" data-col="stotal" checked onchange="toggleStokCol('stotal',this.checked)"> Total Stok</label>
+          <label><input type="checkbox" data-col="sbeli" checked onchange="toggleStokCol('sbeli',this.checked)"> Perlu Beli</label>
+          <label><input type="checkbox" data-col="slast" checked onchange="toggleStokCol('slast',this.checked)"> Terakhir Terjual</label>
+          <div class="kp-group">Finansial</div>
+          <label><input type="checkbox" data-col="sfinal" checked onchange="toggleStokCol('sfinal',this.checked)"> Final Order</label>
+          <label><input type="checkbox" data-col="smodal" checked onchange="toggleStokCol('smodal',this.checked)"> Est. Modal</label>
+          <label><input type="checkbox" data-col="sjual" checked onchange="toggleStokCol('sjual',this.checked)"> Est. Nilai Jual</label>
+          <label><input type="checkbox" data-col="suntung" checked onchange="toggleStokCol('suntung',this.checked)"> Est. Untung</label>
+        </div>
       </div>
     </div>
     <div id="stokCount" style="font-size:.78rem;color:#64748b;margin-bottom:10px"></div>
@@ -404,21 +439,21 @@
         <th style="position:sticky;left:38px;z-index:3;background:#034543;min-width:90px">SKU</th>
         <th style="position:sticky;left:128px;z-index:3;background:#034543;min-width:160px">Produk</th>
         <th style="position:sticky;left:288px;z-index:3;background:#034543;min-width:100px;border-right:2px solid #0a7874">Varian</th>
-        <th>Kategori</th>
-        <th class="tr">Avg/Bln</th>
-        <th class="tr">Avg 3Bln Terakhir</th><th>Tren</th><th>Tren %</th>
-        <th>Tipe</th>
-        <th class="tr">Total Qty Terjual</th>
-        <th class="tr" style="background:#fef9c3;color:#854d0e">Rek. Stok</th>
-        <th class="tr" style="background:#e0f2fe;color:#0369a1">Stok Toko</th>
-        <th class="tr" style="background:#f3e8ff;color:#7c3aed">Stok Gudang</th>
-        <th class="tr" style="background:#f0fdf4;color:#166534">Total Stok</th>
-        <th class="tr" style="background:#fef2f2;color:#dc2626">Perlu Beli</th>
-        <th>Terakhir Terjual</th>
-        <th style="background:#dcfce7;color:#166534;min-width:90px">Final Order</th>
-        <th class="tr" style="background:#fef9c3;color:#854d0e;min-width:110px">Est. Modal</th>
-        <th class="tr" style="background:#dcfce7;color:#166534;min-width:110px">Est. Nilai Jual</th>
-        <th class="tr" style="background:#eff6ff;color:#1d4ed8;min-width:110px">Est. Untung</th>
+        <th class="sc-skat">Kategori</th>
+        <th class="tr sc-savg">Avg/Bln</th>
+        <th class="tr sc-savg3">Avg 3Bln Terakhir</th><th class="sc-strnd">Tren</th><th class="sc-strndp">Tren %</th>
+        <th class="sc-stipe">Tipe</th>
+        <th class="tr sc-sqty">Total Qty Terjual</th>
+        <th class="tr sc-srek" style="background:#fef9c3;color:#854d0e">Rek. Stok</th>
+        <th class="tr sc-stoko" style="background:#e0f2fe;color:#0369a1">Stok Toko</th>
+        <th class="tr sc-sgdng" style="background:#f3e8ff;color:#7c3aed">Stok Gudang</th>
+        <th class="tr sc-stotal" style="background:#f0fdf4;color:#166534">Total Stok</th>
+        <th class="tr sc-sbeli" style="background:#fef2f2;color:#dc2626">Perlu Beli</th>
+        <th class="sc-slast">Terakhir Terjual</th>
+        <th class="sc-sfinal" style="background:#dcfce7;color:#166534;min-width:90px">Final Order</th>
+        <th class="tr sc-smodal" style="background:#fef9c3;color:#854d0e;min-width:110px">Est. Modal</th>
+        <th class="tr sc-sjual" style="background:#dcfce7;color:#166534;min-width:110px">Est. Nilai Jual</th>
+        <th class="tr sc-suntung" style="background:#eff6ff;color:#1d4ed8;min-width:110px">Est. Untung</th>
       </tr></thead>
       <tbody id="tbStok"></tbody>
     </table></div>
@@ -446,7 +481,7 @@
 </div>
 
 </div>
-<div class="gen-info">Generated by generate_harmoni_app.py · 12 Jun 2026 06:27</div>
+<div class="gen-info">Generated by generate_harmoni_app.py · 12 Jun 2026 06:36</div>
 
 <script>
 let BULAN = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Jul-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
@@ -1153,26 +1188,26 @@ function renderStok(data){
       <td style="position:sticky;left:38px;z-index:2;background:${rowBg};min-width:90px"><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${s.sku}</code></td>
       <td style="position:sticky;left:128px;z-index:2;background:${rowBg};min-width:160px;font-weight:600"><strong>${s.produk}</strong></td>
       <td style="position:sticky;left:288px;z-index:2;background:${rowBg};min-width:100px;border-right:2px solid #e2e8f0">${s.varian}</td>
-      <td><span class="badge-blue" style="font-size:.68rem">${s.kategori.replace('PERLENGKAPAN ','')}</span></td>
-      <td class="tr num">${s.avg_per_bulan}</td>
-      <td class="tr num">${s.recent3_avg}</td>
-      <td>${trendBadge(s.trend)}</td>
-      <td class="tr num" style="color:${tcolor}">${tpct}</td>
-      <td class="tc">${s.is_seasonal?'<span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:12px;padding:2px 8px;font-size:.72rem;font-weight:700;white-space:nowrap">🗓 Musiman<br><span style="font-weight:400;font-size:.68rem">Puncak: '+s.peak_month+'</span></span>':'<span style="font-size:.78rem;color:#64748b">Reguler</span>'}</td>
-      <td class="tr num">${s.total_qty.toLocaleString('id-ID')}</td>
-      <td class="tc">${rekBadge(s.rek_qty)}</td>
-      <td class="tr num" style="color:#0369a1">${stToko>0?stToko:'—'}</td>
-      <td class="tr num" style="color:#7c3aed">${stGudang>0?stGudang:'—'}</td>
-      <td class="tr num" style="font-weight:700;color:${stOk?'#166534':'#dc2626'}">${stTotal>0?stTotal:'—'}</td>
-      <td class="tr num" style="font-weight:700;color:#dc2626">${perlBeli>0?perlBeli:(stTotal>0?'✓':'—')}</td>
-      <td class="tc" style="font-size:.78rem;color:#64748b">${s.last_sold||'—'}</td>
-      <td class="tc"><input type="number" min="0" id="${skuId}" value="${savedFinal}"
+      <td class="sc-skat"><span class="badge-blue" style="font-size:.68rem">${s.kategori.replace('PERLENGKAPAN ','')}</span></td>
+      <td class="tr num sc-savg">${s.avg_per_bulan}</td>
+      <td class="tr num sc-savg3">${s.recent3_avg}</td>
+      <td class="sc-strnd">${trendBadge(s.trend)}</td>
+      <td class="tr num sc-strndp" style="color:${tcolor}">${tpct}</td>
+      <td class="tc sc-stipe">${s.is_seasonal?'<span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:12px;padding:2px 8px;font-size:.72rem;font-weight:700;white-space:nowrap">🗓 Musiman<br><span style="font-weight:400;font-size:.68rem">Puncak: '+s.peak_month+'</span></span>':'<span style="font-size:.78rem;color:#64748b">Reguler</span>'}</td>
+      <td class="tr num sc-sqty">${s.total_qty.toLocaleString('id-ID')}</td>
+      <td class="tc sc-srek">${rekBadge(s.rek_qty)}</td>
+      <td class="tr num sc-stoko" style="color:#0369a1">${stToko>0?stToko:'—'}</td>
+      <td class="tr num sc-sgdng" style="color:#7c3aed">${stGudang>0?stGudang:'—'}</td>
+      <td class="tr num sc-stotal" style="font-weight:700;color:${stOk?'#166534':'#dc2626'}">${stTotal>0?stTotal:'—'}</td>
+      <td class="tr num sc-sbeli" style="font-weight:700;color:#dc2626">${perlBeli>0?perlBeli:(stTotal>0?'✓':'—')}</td>
+      <td class="tc sc-slast" style="font-size:.78rem;color:#64748b">${s.last_sold||'—'}</td>
+      <td class="tc sc-sfinal"><input type="number" min="0" id="${skuId}" value="${savedFinal}"
         oninput="saveFinal('${s.sku}',this.value);updateBudgetRow(this,'${s.sku}',${hpp},${harga},${perlBeli})"
         style="width:76px;padding:4px 8px;border:1.5px solid #86efac;border-radius:6px;text-align:right;font-family:'Plus Jakarta Sans',sans-serif;font-size:.85rem;font-weight:600;color:#166534;background:#f0fdf4;outline:none"
         placeholder="0"></td>
-      <td class="tr num" id="budget_${s.sku.replace(/[^a-zA-Z0-9]/g,'_')}" data-raw="${estBudget}" style="color:#854d0e;font-weight:700">${estBudget>0?fmtRp(estBudget):hpp===0?'<span style=\'color:#94a3b8;font-size:.72rem\'>HPP?</span>':'—'}</td>
-      <td class="tr num" id="jual_${s.sku.replace(/[^a-zA-Z0-9]/g,'_')}" data-raw="${estJual}" style="color:#166534;font-weight:700">${estJual>0?fmtRp(estJual):harga===0?'<span style=\'color:#94a3b8;font-size:.72rem\'>Harga?</span>':'—'}</td>
-      <td class="tr num" id="untung_${s.sku.replace(/[^a-zA-Z0-9]/g,'_')}" data-raw="${estJual-estBudget}" style="color:#1d4ed8;font-weight:700">${(estJual-estBudget)>0?fmtRp(estJual-estBudget):'—'}</td>
+      <td class="tr num sc-smodal" id="budget_${s.sku.replace(/[^a-zA-Z0-9]/g,'_')}" data-raw="${estBudget}" style="color:#854d0e;font-weight:700">${estBudget>0?fmtRp(estBudget):hpp===0?'<span style=\'color:#94a3b8;font-size:.72rem\'>HPP?</span>':'—'}</td>
+      <td class="tr num sc-sjual" id="jual_${s.sku.replace(/[^a-zA-Z0-9]/g,'_')}" data-raw="${estJual}" style="color:#166534;font-weight:700">${estJual>0?fmtRp(estJual):harga===0?'<span style=\'color:#94a3b8;font-size:.72rem\'>Harga?</span>':'—'}</td>
+      <td class="tr num sc-suntung" id="untung_${s.sku.replace(/[^a-zA-Z0-9]/g,'_')}" data-raw="${estJual-estBudget}" style="color:#1d4ed8;font-weight:700">${(estJual-estBudget)>0?fmtRp(estJual-estBudget):'—'}</td>
     </tr>`;
   });
 }
@@ -1201,6 +1236,27 @@ function filterStok(){
   });
   renderStok(d);
   updateTotalBudget();
+}
+
+function toggleStokKolomPanel(e){
+  e.stopPropagation();
+  const p=document.getElementById('stokKolomPanel');
+  p.style.display=p.style.display==='block'?'none':'block';
+}
+document.addEventListener('click',function(e){
+  const p=document.getElementById('stokKolomPanel');
+  if(p&&!p.contains(e.target)&&e.target.id!=='btnStokKolom')p.style.display='none';
+});
+function toggleStokCol(key,visible){
+  document.querySelectorAll('.sc-'+key).forEach(function(el){
+    el.style.display=visible?'':'none';
+  });
+}
+function stokKolomAll(visible){
+  document.querySelectorAll('#stokKolomPanel input[type=checkbox]').forEach(function(cb){
+    cb.checked=visible;
+    if(cb.dataset.col)toggleStokCol(cb.dataset.col,visible);
+  });
 }
 
 function stokTableData(){
