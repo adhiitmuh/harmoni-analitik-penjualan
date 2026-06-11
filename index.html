@@ -6,9 +6,6 @@
 <title>Harmoni Analitik Stok dan Penjualan</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
   :root{--g:#034543;--g2:#055a57;--g3:#0a7874;--g4:#1a8b88;--beige:#FFFBD5;--beige2:#f5f0b8;--white:#FAFAFA;--black:#282828;--gray:#64748b}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -85,18 +82,18 @@
     <div class="sub">Jan-25 – Feb-26 &nbsp;·&nbsp; 14 Bulan Data Aktual</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-    <div class="badge">Update: 10 Jun 2026 10:57</div>
+    <div class="badge">Update: 12 Jun 2026 06:27</div>
   </div>
 </div>
 
 <div class="nav">
-  <button id="nav-dashboard" class="nav-btn active" onclick="showTab('dashboard',this)">📊 Dashboard</button>
-  <button id="nav-kategori" class="nav-btn" onclick="showTab('kategori',this)">📂 Per Kategori</button>
-  <button id="nav-divisi" class="nav-btn" onclick="showTab('divisi',this)">🏢 Analisis Divisi</button>
-  <button id="nav-produk" class="nav-btn" onclick="showTab('produk',this)">🏆 Top Produk</button>
-  <button id="nav-masalah" class="nav-btn" onclick="showTab('masalah',this)">🚨 Analisis Masalah</button>
-  <button id="nav-inventori" class="nav-btn" onclick="showTab('inventori',this)">🏪 Inventori Stok</button>
-  <button id="nav-stok" class="nav-btn" onclick="showTab('stok',this)">📦 Rekomendasi</button>
+  <button class="nav-btn active" onclick="showTab('dashboard',this)">📊 Dashboard</button>
+  <button class="nav-btn" onclick="showTab('kategori',this)">📂 Per Kategori</button>
+  <button class="nav-btn" onclick="showTab('divisi',this)">🏢 Analisis Divisi</button>
+  <button class="nav-btn" onclick="showTab('produk',this)">🏆 Top Produk</button>
+  <button class="nav-btn" onclick="showTab('masalah',this)">🚨 Analisis Masalah</button>
+  <button class="nav-btn" onclick="showTab('inventori',this)">🏪 Inventori Stok</button>
+  <button class="nav-btn" onclick="showTab('stok',this)">📦 Rekomendasi</button>
 </div>
 
 <div class="period-bar">
@@ -285,9 +282,9 @@
       <div style="font-weight:600">Belum ada data stok</div>
       <div style="font-size:.82rem;margin-top:4px">Upload file Olsera toko dan/atau gudang dulu</div>
     </div>
-    <div class="table-wrap" id="invTableWrap" style="display:none;border-collapse:separate;border-spacing:0">
+    <div class="table-wrap" id="invTableWrap" style="display:none;max-height:70vh;overflow:auto">
     <table style="border-collapse:separate;border-spacing:0">
-      <thead><tr>
+      <thead style="position:-webkit-sticky;position:sticky;top:0;z-index:4"><tr>
         <th style="position:sticky;left:0;z-index:3;background:#034543;min-width:38px">No</th>
         <th style="position:sticky;left:38px;z-index:3;background:#034543;min-width:90px">SKU</th>
         <th style="position:sticky;left:128px;z-index:3;background:#034543;min-width:160px">Produk</th>
@@ -377,8 +374,8 @@
         <span id="uploadStatus" style="font-size:.75rem;color:#64748b;font-weight:500"></span>
         <span id="stokTokoLabel" style="font-size:.75rem;color:#0369a1;font-weight:600;padding:4px 10px;background:#eff6ff;border-radius:8px"></span>
         <span id="stokGudangLabel" style="font-size:.75rem;color:#7c3aed;font-weight:600;padding:4px 10px;background:#f3e8ff;border-radius:8px"></span>
-        <button id="btn-dl-csv" onclick="downloadStokCSV()" style="padding:6px 14px;background:#475569;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">⬇ CSV</button>
-        <button id="btn-dl-xlsx" onclick="downloadStokXLSX()" style="padding:6px 14px;background:#166534;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">⬇ Excel</button>
+        <button onclick="downloadStokCSV()" style="padding:6px 14px;background:#475569;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">⬇ CSV</button>
+        <button onclick="downloadStokXLSX()" style="padding:6px 14px;background:#166534;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">⬇ Excel</button>
       </div>
       <div class="filter-row" style="margin:6px 0 0;gap:8px">
         <input id="stokSearch" type="text" placeholder="Cari produk..." oninput="filterStok()" style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.82rem;width:200px">
@@ -401,8 +398,8 @@
       </div>
     </div>
     <div id="stokCount" style="font-size:.78rem;color:#64748b;margin-bottom:10px"></div>
-    <div class="table-wrap"><table style="border-collapse:separate;border-spacing:0">
-      <thead><tr>
+    <div class="table-wrap" id="stokTableWrap" style="max-height:70vh;overflow:auto"><table style="border-collapse:separate;border-spacing:0">
+      <thead style="position:-webkit-sticky;position:sticky;top:0;z-index:4"><tr>
         <th style="position:sticky;left:0;z-index:3;background:#034543;min-width:38px">No</th>
         <th style="position:sticky;left:38px;z-index:3;background:#034543;min-width:90px">SKU</th>
         <th style="position:sticky;left:128px;z-index:3;background:#034543;min-width:160px">Produk</th>
@@ -449,7 +446,7 @@
 </div>
 
 </div>
-<div class="gen-info">Generated by generate_harmoni_app.py · 10 Jun 2026 10:57</div>
+<div class="gen-info">Generated by generate_harmoni_app.py · 12 Jun 2026 06:27</div>
 
 <script>
 let BULAN = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Jul-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
@@ -825,11 +822,13 @@ function renderInventori(items){
   wrap.style.display='block'; empty.style.display='none';
   footer.style.display='block'; katDiv.style.display='block';
   cnt.textContent=items.length+' produk ditampilkan';
-  tbody.innerHTML=items.map((item,i)=>{
+  adjustTableWrapHeight();
+  tbody.innerHTML='';
+  items.forEach((item,i)=>{
     const excl=isInvExcluded(item.sku);
     const rowBg=i%2===0?'#fff':'#f8fafc';
     const sid=item.sku.replace(/[^a-zA-Z0-9]/g,'_');
-    return `<tr style="opacity:${excl?'0.35':'1'}">
+    tbody.innerHTML+=`<tr style="opacity:${excl?'0.35':'1'}">
       <td class="tc" style="position:sticky;left:0;z-index:2;background:${rowBg};min-width:38px">${i+1}</td>
       <td style="position:sticky;left:38px;z-index:2;background:${rowBg};min-width:90px"><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${item.sku}</code></td>
       <td style="position:sticky;left:128px;z-index:2;background:${rowBg};min-width:160px;font-weight:600">${item.produk}</td>
@@ -847,7 +846,7 @@ function renderInventori(items){
         style="padding:2px 10px;border-radius:12px;font-size:.72rem;font-weight:700;cursor:pointer;border:none;
         background:${excl?'#fee2e2':'#f0fdf4'};color:${excl?'#dc2626':'#166534'}">${excl?'Excluded':'Sertakan'}</button></td>
     </tr>`;
-  }).join('');
+  });
   updateInventoriSummary(items);
 }
 
@@ -917,12 +916,24 @@ function updateInventoriSummary(items){
   }).join('');
 }
 
+function adjustTableWrapHeight(){
+  ['invTableWrap','stokTableWrap'].forEach(function(wid){
+    var wrap=document.getElementById(wid);
+    if(!wrap||wrap.style.display==='none')return;
+    var rect=wrap.getBoundingClientRect();
+    if(rect.top>50)wrap.style.maxHeight=Math.max(200,window.innerHeight-rect.top-16)+'px';
+  });
+}
+window.addEventListener('resize',adjustTableWrapHeight);
+
 function showTab(id,btn){
   document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
   btn.classList.add('active');
+  window.scrollTo(0,0);
   if(id==='inventori') filterInventori();
+  if(id==='inventori'||id==='stok') setTimeout(adjustTableWrapHeight,0);
 }
 
 // Charts (named for period filter updates)
@@ -989,7 +1000,9 @@ function updateKatChart(){
 }
 
 const tbDiv=document.getElementById('tbDiv');
-tbDiv.innerHTML=DIVISI_DATA.map(d=>`<tr><td><strong>${d.bulan}</strong></td><td class="tr">${fmtRp(d.yh_omzet)}</td><td class="tr">${fmtRp(d.yh_profit)}</td><td>${mBadge(d.yh_margin)}</td><td class="tr">${fmtRp(d.cust_omzet)}</td><td class="tr">${fmtRp(d.cust_omzet)}</td><td class="tr">${pct(d.kontr_yh)}</td><td class="tr">${pct(100-d.kontr_yh)}</td></tr>`).join('');
+DIVISI_DATA.forEach(d=>{
+  tbDiv.innerHTML+=`<tr><td><strong>${d.bulan}</strong></td><td class="tr">${fmtRp(d.yh_omzet)}</td><td class="tr">${fmtRp(d.yh_profit)}</td><td>${mBadge(d.yh_margin)}</td><td class="tr">${fmtRp(d.cust_omzet)}</td><td class="tr">${fmtRp(d.cust_omzet)}</td><td class="tr">${pct(d.kontr_yh)}</td><td class="tr">${pct(100-d.kontr_yh)}</td></tr>`;
+});
 
 function filterTopProduk(){
   renderTopProduk(FILTERED_IDX);
@@ -997,10 +1010,11 @@ function filterTopProduk(){
 
 function renderMas(data){
   const tb=document.getElementById('tbMas');
-  tb.innerHTML=data.map(m=>{
+  tb.innerHTML='';
+  data.forEach(m=>{
     const sc=m.status.includes('Kritis')?'badge-red':m.status.includes('Perhatian')?'badge-orange':'badge-yellow';
-    return `<tr><td class="tc">${m.no}</td><td><code style="font-size:.78rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${m.sku}</code></td><td><span class="badge-blue" style="font-size:.68rem">${m.kat.replace('PERLENGKAPAN ','')}</span></td><td>${m.produk}</td><td>${m.varian}</td><td>${m.bulan}</td><td class="tr">${m.qty}</td><td class="tr">${fmtRp(m.omzet)}</td><td class="tr">${fmtRp(m.hpp)}</td><td class="tr" style="color:#dc2626;font-weight:600">-${fmtRp(Math.abs(m.profit))}</td><td class="tr" style="color:#dc2626">${m.margin.toFixed(1)}%</td><td><span class="${sc}">${m.status}</span></td><td style="font-size:.78rem;color:#64748b">${m.rek}</td></tr>`;
-  }).join('');
+    tb.innerHTML+=`<tr><td class="tc">${m.no}</td><td><code style="font-size:.78rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${m.sku}</code></td><td><span class="badge-blue" style="font-size:.68rem">${m.kat.replace('PERLENGKAPAN ','')}</span></td><td>${m.produk}</td><td>${m.varian}</td><td>${m.bulan}</td><td class="tr">${m.qty}</td><td class="tr">${fmtRp(m.omzet)}</td><td class="tr">${fmtRp(m.hpp)}</td><td class="tr" style="color:#dc2626;font-weight:600">-${fmtRp(Math.abs(m.profit))}</td><td class="tr" style="color:#dc2626">${m.margin.toFixed(1)}%</td><td><span class="${sc}">${m.status}</span></td><td style="font-size:.78rem;color:#64748b">${m.rek}</td></tr>`;
+  });
 }
 renderMas(MASALAH_SKU);
 function filterMasalah(){
@@ -1020,7 +1034,6 @@ function rekBadge(qty){
 // ── Stok fisik (toko & gudang) ───────────────────────────────────────────────
 let STOK_TOKO   = JSON.parse(localStorage.getItem('stok_toko')||'{}');
 let STOK_GUDANG = JSON.parse(localStorage.getItem('stok_gudang')||'{}');
-let _currentUserName = '';
 
 function uploadStokFisik(files, jenis){
   if(!files||!files.length) return;
@@ -1042,12 +1055,6 @@ function uploadStokFisik(files, jenis){
         localStorage.setItem('stok_gudang',JSON.stringify(map));
         ['stokGudangLabel','invGudangLabel'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=lbl; });
       }
-      // Sync ke Firestore agar semua user (owner/admin) lihat data terbaru
-      _app.firestore().collection('settings').doc('stok_fisik').set({
-        [jenis]: map,
-        [jenis+'_updated_at']: firebase.firestore.FieldValue.serverTimestamp(),
-        [jenis+'_updated_by']: _currentUserName || 'unknown'
-      }, { merge: true }).catch(e => console.error('Sync Firestore gagal:', e));
       filterStok();
       filterInventori();
     };
@@ -1122,8 +1129,9 @@ function getFinal(sku){ return localStorage.getItem(stokKey(sku))||''; }
 function renderStok(data){
   const tb=document.getElementById('tbStok');
   const cnt=document.getElementById('stokCount');
+  tb.innerHTML='';
   cnt.textContent=data.length+' produk ditampilkan';
-  tb.innerHTML=data.map((s,i)=>{
+  data.forEach((s,i)=>{
     const tpct=s.trend_pct>0?'+'+s.trend_pct.toFixed(0)+'%':s.trend_pct.toFixed(0)+'%';
     const tcolor=s.trend==='naik'?'#15803d':s.trend==='turun'?'#dc2626':'#854d0e';
     const savedFinal=getFinal(s.sku);
@@ -1140,7 +1148,7 @@ function renderStok(data){
     const estJual=qty4calc*harga;
     const stOk=stTotal>=s.rek_qty;
     const rowBg=i%2===0?'#fff':'#f8fafc';
-    return `<tr>
+    tb.innerHTML+=`<tr>
       <td class="tc" style="position:sticky;left:0;z-index:2;background:${rowBg};min-width:38px">${i+1}</td>
       <td style="position:sticky;left:38px;z-index:2;background:${rowBg};min-width:90px"><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${s.sku}</code></td>
       <td style="position:sticky;left:128px;z-index:2;background:${rowBg};min-width:160px;font-weight:600"><strong>${s.produk}</strong></td>
@@ -1166,7 +1174,7 @@ function renderStok(data){
       <td class="tr num" id="jual_${s.sku.replace(/[^a-zA-Z0-9]/g,'_')}" data-raw="${estJual}" style="color:#166534;font-weight:700">${estJual>0?fmtRp(estJual):harga===0?'<span style=\'color:#94a3b8;font-size:.72rem\'>Harga?</span>':'—'}</td>
       <td class="tr num" id="untung_${s.sku.replace(/[^a-zA-Z0-9]/g,'_')}" data-raw="${estJual-estBudget}" style="color:#1d4ed8;font-weight:700">${(estJual-estBudget)>0?fmtRp(estJual-estBudget):'—'}</td>
     </tr>`;
-  }).join('');
+  });
 }
 renderStok(STOK_DATA);
 updateTotalBudget();
@@ -1241,124 +1249,6 @@ function downloadStokXLSX(){
   s.onload=doExport;
   document.head.appendChild(s);
 }
-
-// ── FIREBASE AUTH & ROLE ──
-const _fbCfg = {
-  apiKey: 'AIzaSyA9V5Lw40pDeAWeQKijYCkdvnag8AlEe74',
-  authDomain: 'harmoni-indonesia.firebaseapp.com',
-  projectId: 'harmoni-indonesia',
-  storageBucket: 'harmoni-indonesia.firebasestorage.app',
-  messagingSenderId: '825719884876',
-  appId: '1:825719884876:web:a8fd78d382e0f98cf6b8e9'
-};
-const _app = firebase.apps.find(a => a.name === 'harmoni-auth') || firebase.initializeApp(_fbCfg, 'harmoni-auth');
-
-_app.auth().onAuthStateChanged(async user => {
-  const overlay   = document.getElementById('auth-overlay');
-  const elLoading = document.getElementById('auth-loading');
-  const elNoLogin = document.getElementById('auth-no-login');
-  const elDenied  = document.getElementById('auth-denied');
-
-  if (!user) {
-    elLoading.style.display = 'none';
-    elNoLogin.style.display = 'block';
-    return;
-  }
-  try {
-    const snap    = await _app.firestore().collection('users').doc(user.uid).get();
-    const data    = snap.exists ? snap.data() : null;
-    const isOwner = data?.role === 'owner';
-    const appData = data?.apps?.harmoni_analitik;
-
-    if (!data?.aktif || (!isOwner && !appData?.akses)) {
-      elLoading.style.display = 'none';
-      elDenied.style.display  = 'block';
-      return;
-    }
-
-    overlay.style.display = 'none';
-    _currentUserName = data.nama || user.email;
-    const role = isOwner ? 'admin' : (appData.role || 'operator');
-    document.querySelector('.header .badge').textContent = _currentUserName + ' · ' + role;
-    applyRole(role);
-
-    // Load stok fisik dari Firestore — sync antar device/user
-    try {
-      const stokSnap = await _app.firestore().collection('settings').doc('stok_fisik').get();
-      if (stokSnap.exists) {
-        const sd = stokSnap.data();
-        if (sd.toko && Object.keys(sd.toko).length) {
-          STOK_TOKO = sd.toko;
-          localStorage.setItem('stok_toko', JSON.stringify(STOK_TOKO));
-          const nt = Object.keys(STOK_TOKO).length;
-          const lbl = '✓ Toko: ' + nt + ' SKU' + (sd.toko_updated_by ? ' · ' + sd.toko_updated_by : '') + (sd.toko_updated_at ? ' · ' + _fmtTs(sd.toko_updated_at) : '');
-          ['stokTokoLabel','invTokoLabel'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = lbl; });
-        }
-        if (sd.gudang && Object.keys(sd.gudang).length) {
-          STOK_GUDANG = sd.gudang;
-          localStorage.setItem('stok_gudang', JSON.stringify(STOK_GUDANG));
-          const ng = Object.keys(STOK_GUDANG).length;
-          const lbl = '✓ Gudang: ' + ng + ' SKU' + (sd.gudang_updated_by ? ' · ' + sd.gudang_updated_by : '') + (sd.gudang_updated_at ? ' · ' + _fmtTs(sd.gudang_updated_at) : '');
-          ['stokGudangLabel','invGudangLabel'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = lbl; });
-        }
-      }
-    } catch(e) { console.error('Gagal load stok dari Firestore:', e); }
-  } catch(e) {
-    elLoading.style.display = 'none';
-    elDenied.style.display  = 'block';
-  }
-});
-
-function _fmtTs(ts) {
-  if (!ts || !ts.toDate) return '';
-  const d = ts.toDate();
-  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-}
-
-function applyRole(role) {
-  if (role === 'admin') return;
-  // operator: sembunyikan 4 tab analitik
-  ['dashboard','kategori','divisi','produk'].forEach(id => {
-    const btn = document.getElementById('nav-' + id);
-    const tab = document.getElementById('tab-' + id);
-    if (btn) btn.style.display = 'none';
-    if (tab) { tab.classList.remove('active'); tab.style.display = 'none'; }
-  });
-  // sembunyikan period bar (hanya relevan untuk tab analitik)
-  const pb = document.querySelector('.period-bar');
-  if (pb) pb.style.display = 'none';
-  // sembunyikan tombol download (export hanya untuk admin)
-  ['btn-dl-csv','btn-dl-xlsx'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-  // aktifkan tab masalah sebagai landing
-  document.getElementById('tab-masalah').style.display = '';
-  document.getElementById('tab-masalah').classList.add('active');
-  document.getElementById('nav-masalah').classList.add('active');
-}
 </script>
-
-<!-- AUTH OVERLAY -->
-<div id="auth-overlay" style="position:fixed;inset:0;background:rgba(3,69,67,0.94);z-index:9999;display:flex;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:16px;padding:36px 32px;width:360px;max-width:92vw;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3)">
-    <div id="auth-loading">
-      <div style="font-size:2rem;margin-bottom:12px">🔐</div>
-      <div style="font-weight:600;color:#034543;font-size:1rem">Memeriksa akses...</div>
-    </div>
-    <div id="auth-no-login" style="display:none">
-      <div style="font-size:2rem;margin-bottom:12px">🔒</div>
-      <div style="font-weight:700;color:#034543;margin-bottom:8px;font-size:1rem">Login Diperlukan</div>
-      <div style="font-size:.85rem;color:#64748b;margin-bottom:20px">Silakan login terlebih dahulu melalui Portal Harmoni Indonesia.</div>
-      <a href="https://adhiitmuh.github.io/harmoni-indonesia/" style="display:inline-block;padding:10px 22px;background:#034543;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:.9rem">Buka Portal →</a>
-    </div>
-    <div id="auth-denied" style="display:none">
-      <div style="font-size:2rem;margin-bottom:12px">⛔</div>
-      <div style="font-weight:700;color:#034543;margin-bottom:8px;font-size:1rem">Tidak Ada Akses</div>
-      <div style="font-size:.85rem;color:#64748b;margin-bottom:20px">Akun Anda belum memiliki akses ke aplikasi ini. Hubungi admin untuk mendapatkan akses.</div>
-      <a href="https://adhiitmuh.github.io/harmoni-indonesia/" style="display:inline-block;padding:10px 22px;background:#034543;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:.9rem">Kembali ke Portal →</a>
-    </div>
-  </div>
-</div>
 </body>
 </html>
