@@ -6,6 +6,9 @@
 <title>Harmoni Analitik Stok dan Penjualan</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
   :root{--g:#034543;--g2:#055a57;--g3:#0a7874;--g4:#1a8b88;--beige:#FFFBD5;--beige2:#f5f0b8;--white:#FAFAFA;--black:#282828;--gray:#64748b}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -93,13 +96,13 @@
 </div>
 
 <div class="nav">
-  <button class="nav-btn active" onclick="showTab('dashboard',this)">📊 Dashboard</button>
-  <button class="nav-btn" onclick="showTab('kategori',this)">📂 Per Kategori</button>
-  <button class="nav-btn" onclick="showTab('divisi',this)">🏢 Analisis Divisi</button>
-  <button class="nav-btn" onclick="showTab('produk',this)">🏆 Top Produk</button>
-  <button class="nav-btn" onclick="showTab('masalah',this)">🚨 Analisis Masalah</button>
-  <button class="nav-btn" onclick="showTab('inventori',this)">🏪 Inventori Stok</button>
-  <button class="nav-btn" onclick="showTab('stok',this)">📦 Rekomendasi</button>
+  <button id="nav-dashboard" class="nav-btn active" onclick="showTab('dashboard',this)">📊 Dashboard</button>
+  <button id="nav-kategori" class="nav-btn" onclick="showTab('kategori',this)">📂 Per Kategori</button>
+  <button id="nav-divisi" class="nav-btn" onclick="showTab('divisi',this)">🏢 Analisis Divisi</button>
+  <button id="nav-produk" class="nav-btn" onclick="showTab('produk',this)">🏆 Top Produk</button>
+  <button id="nav-masalah" class="nav-btn" onclick="showTab('masalah',this)">🚨 Analisis Masalah</button>
+  <button id="nav-inventori" class="nav-btn" onclick="showTab('inventori',this)">🏪 Inventori Stok</button>
+  <button id="nav-stok" class="nav-btn" onclick="showTab('stok',this)">📦 Rekomendasi</button>
 </div>
 
 <div class="period-bar">
@@ -1308,6 +1311,127 @@ function downloadStokXLSX(){
   s.onload=doExport;
   document.head.appendChild(s);
 }
+
+// ── FIREBASE AUTH & ROLE ──
+const _fbCfg = {
+  apiKey: 'AIzaSyA9V5Lw40pDeAWeQKijYCkdvnag8AlEe74',
+  authDomain: 'harmoni-indonesia.firebaseapp.com',
+  projectId: 'harmoni-indonesia',
+  storageBucket: 'harmoni-indonesia.firebasestorage.app',
+  messagingSenderId: '825719884876',
+  appId: '1:825719884876:web:a8fd78d382e0f98cf6b8e9'
+};
+const _app = firebase.apps.find(a => a.name === 'harmoni-auth') || firebase.initializeApp(_fbCfg, 'harmoni-auth');
+
+_app.auth().onAuthStateChanged(async user => {
+  const overlay   = document.getElementById('auth-overlay');
+  const elLoading = document.getElementById('auth-loading');
+  const elNoLogin = document.getElementById('auth-no-login');
+  const elDenied  = document.getElementById('auth-denied');
+
+  if (!user) {
+    elLoading.style.display = 'none';
+    elNoLogin.style.display = 'block';
+    return;
+  }
+  try {
+    const snap    = await _app.firestore().collection('users').doc(user.uid).get();
+    const data    = snap.exists ? snap.data() : null;
+    const isOwner = data?.role === 'owner';
+    const appData = data?.apps?.harmoni_analitik;
+
+    if (!data?.aktif || (!isOwner && !appData?.akses)) {
+      elLoading.style.display = 'none';
+      elDenied.style.display  = 'block';
+      return;
+    }
+
+    overlay.style.display = 'none';
+    _currentUserName = data.nama || user.email;
+    const role = isOwner ? 'admin' : (appData.role || 'operator');
+    document.querySelector('.header .badge').textContent = _currentUserName + ' · ' + role;
+    applyRole(role);
+
+    // Sync stok dari Firestore ke semua perangkat
+    try {
+      const stokSnap = await _app.firestore().collection('settings').doc('stok_fisik').get();
+      if (stokSnap.exists) {
+        const sd = stokSnap.data();
+        if (sd.toko && Object.keys(sd.toko).length) {
+          STOK_TOKO = sd.toko;
+          localStorage.setItem('stok_toko', JSON.stringify(STOK_TOKO));
+          const nt = Object.keys(STOK_TOKO).length;
+          const lbl = '✓ Toko: ' + nt + ' SKU' + (sd.toko_updated_by ? ' · ' + sd.toko_updated_by : '') + (sd.toko_updated_at ? ' · ' + _fmtTs(sd.toko_updated_at) : '');
+          ['stokTokoLabel','invTokoLabel'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = lbl; });
+        }
+        if (sd.gudang && Object.keys(sd.gudang).length) {
+          STOK_GUDANG = sd.gudang;
+          localStorage.setItem('stok_gudang', JSON.stringify(STOK_GUDANG));
+          const ng = Object.keys(STOK_GUDANG).length;
+          const lbl = '✓ Gudang: ' + ng + ' SKU' + (sd.gudang_updated_by ? ' · ' + sd.gudang_updated_by : '') + (sd.gudang_updated_at ? ' · ' + _fmtTs(sd.gudang_updated_at) : '');
+          ['stokGudangLabel','invGudangLabel'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = lbl; });
+        }
+      }
+    } catch(e) { console.error('Gagal load stok dari Firestore:', e); }
+  } catch(e) {
+    elLoading.style.display = 'none';
+    elDenied.style.display  = 'block';
+  }
+});
+
+function _fmtTs(ts) {
+  if (!ts || !ts.toDate) return '';
+  const d = ts.toDate();
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+}
+
+function applyRole(role) {
+  if (role === 'admin') return;
+  // operator: sembunyikan 4 tab analitik
+  ['dashboard','kategori','divisi','produk'].forEach(id => {
+    const btn = document.getElementById('nav-' + id);
+    const tab = document.getElementById('tab-' + id);
+    if (btn) btn.style.display = 'none';
+    if (tab) { tab.classList.remove('active'); tab.style.display = 'none'; }
+  });
+  // sembunyikan period bar (hanya relevan untuk tab analitik)
+  const pb = document.querySelector('.period-bar');
+  if (pb) pb.style.display = 'none';
+  // sembunyikan tombol download (export hanya untuk admin)
+  ['btn-dl-csv','btn-dl-xlsx'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  // aktifkan tab masalah sebagai landing page untuk operator
+  const tabMasalah = document.getElementById('tab-masalah');
+  const navMasalah = document.getElementById('nav-masalah');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => { t.classList.remove('active'); t.style.display = ''; });
+  if (tabMasalah) { tabMasalah.style.display = ''; tabMasalah.classList.add('active'); }
+  if (navMasalah) navMasalah.classList.add('active');
+}
 </script>
+
+<!-- AUTH OVERLAY -->
+<div id="auth-overlay" style="position:fixed;inset:0;background:rgba(3,69,67,0.94);z-index:9999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:36px 32px;width:360px;max-width:92vw;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3)">
+    <div id="auth-loading">
+      <div style="font-size:2rem;margin-bottom:12px">🔐</div>
+      <div style="font-weight:600;color:#034543;font-size:1rem">Memeriksa akses...</div>
+    </div>
+    <div id="auth-no-login" style="display:none">
+      <div style="font-size:2rem;margin-bottom:12px">🔒</div>
+      <div style="font-weight:700;color:#034543;margin-bottom:8px;font-size:1rem">Login Diperlukan</div>
+      <div style="font-size:.85rem;color:#64748b;margin-bottom:20px">Silakan login terlebih dahulu melalui Portal Harmoni Indonesia.</div>
+      <a href="https://adhiitmuh.github.io/harmoni-indonesia/" style="display:inline-block;padding:10px 22px;background:#034543;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:.9rem">Buka Portal →</a>
+    </div>
+    <div id="auth-denied" style="display:none">
+      <div style="font-size:2rem;margin-bottom:12px">⛔</div>
+      <div style="font-weight:700;color:#034543;margin-bottom:8px;font-size:1rem">Tidak Ada Akses</div>
+      <div style="font-size:.85rem;color:#64748b;margin-bottom:20px">Akun Anda belum memiliki akses ke aplikasi ini. Hubungi admin untuk mendapatkan akses.</div>
+      <a href="https://adhiitmuh.github.io/harmoni-indonesia/" style="display:inline-block;padding:10px 22px;background:#034543;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:.9rem">Kembali ke Portal →</a>
+    </div>
+  </div>
+</div>
 </body>
 </html>
