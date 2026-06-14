@@ -109,7 +109,12 @@ if olsera_files:
             if not headers: continue
             d = dict(zip(headers, row))
             sku = safe_str(d.get('sku', ''))
-            if not sku: continue
+            kat = safe_str(d.get('group', '')).upper()
+            if not sku:
+                if kat == 'CUSTOM':
+                    sku = 'CUSTOM'
+                else:
+                    continue
             qty = int(safe_num(d.get('sold qty', 0)))
             if qty <= 0: continue
             omzet  = safe_num(d.get('total sales amount', 0))
@@ -117,7 +122,6 @@ if olsera_files:
             profit = safe_num(d.get('profit', 0))
             produk = safe_str(d.get('product', ''))
             varian = safe_str(d.get('variant', ''))
-            kat    = safe_str(d.get('group', '')).upper()
             divisi = DIVISI_MAP.get(kat, 'Young Harmonis')
             raw_rows.append({
                 'bulan': bulan, 'divisi': divisi, 'kategori': kat,
@@ -1057,14 +1061,14 @@ function processOlseraFiles(files,st){{
         const iQ=ci('sold qty'),iO=ci('total sales amount'),iH=ci('total cost price'),iPr=ci('profit');
         for(let r=hRow+1;r<rows.length;r++){{
           const row=rows[r];
-          const sku=String(row[iS]||'').trim();
-          if(!sku) continue;
+          let sku=String(row[iS]||'').trim();
+          const kat=String(row[iG]||'').toUpperCase().trim();
+          if(!sku){{if(kat==='CUSTOM')sku='CUSTOM';else continue;}}
           const qty=parseFloat(row[iQ])||0;
           if(qty<=0) continue;
           const omzet=parseFloat(row[iO])||0;
           const hpp=parseFloat(row[iH])||0;
           const profit=parseFloat(row[iPr])||0;
-          const kat=String(row[iG]||'').toUpperCase().trim();
           const divisi=DIVISI_MAP[kat]||'Young Harmonis';
           rawRows.push({{bulan,divisi,kategori:kat,produk:String(row[iP]||'').trim(),
             varian:String(row[iV]||'').trim(),sku,qty,omzet,hpp,profit}});
