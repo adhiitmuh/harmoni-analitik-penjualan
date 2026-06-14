@@ -93,7 +93,11 @@ if olsera_files:
         if not bulan:
             print(f"  ⚠️  Skip {fname} — tidak bisa baca bulan dari nama file")
             continue
-        wb_tmp = openpyxl.load_workbook(fpath, read_only=True, data_only=True)
+        try:
+            wb_tmp = openpyxl.load_workbook(fpath, read_only=True, data_only=True)
+        except Exception as e:
+            print(f"  ⚠️  Skip {fname} — file rusak atau belum terdownload ({e})")
+            continue
         ws_tmp = wb_tmp.active
         headers = None
         n = 0
@@ -586,6 +590,11 @@ html = f"""<!DOCTYPE html>
     {''.join(f'<option value="{b}">{b}</option>' for b in bulan_labels)}
   </select>
   <span id="periodLabel" class="period-badge">Semua {len(bulan_labels)} Bulan</span>
+  <label style="margin-left:auto;padding:4px 12px;background:#034543;color:#fff;border-radius:20px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">
+    📤 Update Data
+    <input type="file" id="globalOlseraInput" accept=".xlsx" multiple style="display:none" onchange="handleGlobalUpload(this.files)">
+  </label>
+  <span id="globalUploadStatus" style="font-size:.72rem;color:#64748b;font-weight:500;white-space:nowrap"></span>
 </div>
 
 <div class="main">
@@ -994,6 +1003,20 @@ function bulanSortKey(b){{
   return parseInt('20'+p[1])*100+(MONTH_NUM_JS[p[0]]||0);
 }}
 
+function handleGlobalUpload(files){{
+  const st=document.getElementById('globalUploadStatus');
+  st.textContent='⏳ Memuat...';
+  if(typeof XLSX==='undefined'){{
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    s.onload=()=>processOlseraFiles(files,st);
+    s.onerror=()=>{{st.textContent='⚠️ Gagal memuat library.';}};
+    document.head.appendChild(s);
+    return;
+  }}
+  processOlseraFiles(files,st);
+}}
+
 function handleOlseraUpload(files){{
   if(!files||!files.length) return;
   const st=document.getElementById('uploadStatus');
@@ -1138,9 +1161,18 @@ function rebuildAllData(rawRows){{
     const r3avg=+(rec3/3).toFixed(1);
     const tpct=prev3>0?(rec3-prev3)/prev3*100:rec3>0?100:0;
     const trend=tpct>20?'naik':tpct<-20?'turun':'stabil';
-    const rek=Math.max(1,Math.round(r3avg*(trend==='naik'?1.3:trend==='turun'?0.9:1.1)));
+    // Seasonality detection
+    const calQty={{}};
+    allBulan.forEach((b,bi)=>{{const mn=MONTH_NUM_JS[b.split('-')[0]]||0;if(!calQty[mn])calQty[mn]=[];calQty[mn].push(q[bi]);}});
+    const calAvg={{}};Object.keys(calQty).forEach(mn=>{{calQty[mn].forEach(v=>{{calAvg[mn]=(calAvg[mn]||0)+v/calQty[mn].length;}});}});
+    const peakMn=Object.keys(calAvg).reduce((a,b)=>calAvg[a]>calAvg[b]?a:b,Object.keys(calAvg)[0]||'0');
+    const peakAvg=calAvg[peakMn]||0;
+    const overallAvg=tot/Math.max(N,1);
+    const isSeasonal=peakAvg/Math.max(overallAvg,0.001)>=2.5&&tot>=10&&act>=3;
+    const peakMonthName=MONTH_ID_JS[parseInt(peakMn)]||'';
+    const rek=isSeasonal?Math.max(1,Math.round(peakAvg*1.2)):Math.max(1,Math.round(r3avg*(trend==='naik'?1.3:trend==='turun'?0.9:1.1)));
     const last=[...allBulan].reverse().find(b=>skuMonthly[sku][bidx[b]]>0)||'';
-    stok.push({{sku,produk:inf.produk,varian:inf.varian,kategori:inf.kategori,divisi:inf.divisi,harga_unit:inf.harga_unit,hpp_unit:inf.hpp_unit,total_qty:tot,months_active:act,avg_per_bulan:+(tot/Math.max(act,1)).toFixed(1),recent3_avg:r3avg,trend,trend_pct:+tpct.toFixed(1),rek_qty:rek,last_sold:last,monthly:[...q]}});
+    stok.push({{sku,produk:inf.produk,varian:inf.varian,kategori:inf.kategori,divisi:inf.divisi,harga_unit:inf.harga_unit,hpp_unit:inf.hpp_unit,total_qty:tot,months_active:act,avg_per_bulan:+(tot/Math.max(act,1)).toFixed(1),recent3_avg:r3avg,trend,trend_pct:+tpct.toFixed(1),is_seasonal:isSeasonal,peak_month:peakMonthName,rek_qty:rek,last_sold:last,monthly:[...q]}});
   }});
   STOK_DATA=stok.sort((a,b)=>b.total_qty-a.total_qty);
 
