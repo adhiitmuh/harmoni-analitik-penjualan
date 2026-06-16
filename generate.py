@@ -639,11 +639,11 @@ html = f"""<!DOCTYPE html>
       <tbody id="tbKat"></tbody>
       <tfoot><tr style="font-weight:700;background:#f8fafc">
         <td colspan="3" style="padding:10px 12px">GRAND TOTAL</td>
-        <td class="tr" style="padding:10px 12px">Rp {grand['omzet']:,.0f}</td>
-        <td class="tr" style="padding:10px 12px">Rp {grand.get('hpp',0):,.0f}</td>
-        <td class="tr" style="padding:10px 12px">Rp {grand['profit']:,.0f}</td>
-        <td style="padding:10px 12px"><span class="badge-green">{grand['margin']:.1f}%</span></td>
-        <td class="tr" style="padding:10px 12px">{grand['markup']:.1f}%</td>
+        <td class="tr" id="gtOmzet" style="padding:10px 12px">Rp {grand['omzet']:,.0f}</td>
+        <td class="tr" id="gtHpp" style="padding:10px 12px">Rp {grand.get('hpp',0):,.0f}</td>
+        <td class="tr" id="gtProfit" style="padding:10px 12px">Rp {grand['profit']:,.0f}</td>
+        <td style="padding:10px 12px"><span class="badge-green" id="gtMargin">{grand['margin']:.1f}%</span></td>
+        <td class="tr" id="gtMarkup" style="padding:10px 12px">{grand['markup']:.1f}%</td>
       </tr></tfoot>
     </table></div>
   </div>
@@ -1487,6 +1487,15 @@ function renderRingkasan(fKatOmzet, fKatProfit, fKatHpp){{
     return {{no:i+1,nama:nm,omzet,hpp:hpp||null,profit,margin,markup,divisi:KAT_DIVISI[i]}};
   }}).filter(r=>r.omzet>0).sort((a,b)=>b.omzet-a.omzet).map((r,i)=>{{r.no=i+1;return r;}});
   tb.innerHTML = rows.map(r=>`<tr><td class="tc">${{r.no}}</td><td><strong>${{r.nama}}</strong></td><td><span class="badge-blue">${{r.divisi||'—'}}</span></td><td class="tr">${{fmtRp(r.omzet)}}</td><td class="tr">${{r.hpp?fmtRp(r.hpp):'—'}}</td><td class="tr">${{fmtRp(r.profit)}}</td><td>${{mBar(r.margin)}}</td><td class="tr">${{r.markup?pct(r.markup):'—'}}</td></tr>`).join('');
+
+  const gtOmzet=fKatOmzet.reduce((s,v)=>s+v,0), gtProfit=fKatProfit.reduce((s,v)=>s+v,0), gtHpp=fKatHpp.reduce((s,v)=>s+v,0);
+  const gtMargin=gtOmzet>0?gtProfit/gtOmzet*100:0, gtMarkup=gtHpp>0?gtProfit/gtHpp*100:0;
+  const gById=id=>document.getElementById(id);
+  if(gById('gtOmzet'))  gById('gtOmzet').textContent  = fmtRp(gtOmzet);
+  if(gById('gtHpp'))    gById('gtHpp').textContent    = fmtRp(gtHpp);
+  if(gById('gtProfit')) gById('gtProfit').textContent = fmtRp(gtProfit);
+  if(gById('gtMargin')) gById('gtMargin').textContent = gtMargin.toFixed(1)+'%';
+  if(gById('gtMarkup')) gById('gtMarkup').textContent = gtMarkup.toFixed(1)+'%';
 }}
 
 // Initial render
