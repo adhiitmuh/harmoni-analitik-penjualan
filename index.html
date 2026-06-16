@@ -87,11 +87,11 @@
 
 <div class="header">
   <div>
-    <div class="header-logo">harmoni <span>· Analitik Stok dan Penjualan</span></div>
-    <div class="sub">Jan-25 – Feb-26 &nbsp;·&nbsp; 14 Bulan Data Aktual</div>
+    <div class="header-logo"><img src="img/logo-beige.png" alt="harmoni" style="height:22px;vertical-align:middle;margin-right:8px"><span>· Analitik Stok dan Penjualan</span></div>
+    <div class="sub">Jan-25 – Feb-26 &nbsp;·&nbsp; 13 Bulan Data Aktual</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-    <div class="badge">Update: 12 Jun 2026 06:51</div>
+    <div class="badge">Update: 15 Jun 2026 00:13</div>
   </div>
 </div>
 
@@ -114,9 +114,14 @@
   <button class="pbtn" onclick="setPeriod('3m',this)">3 Bln</button>
   <select id="bulanPicker" onchange="setPeriodBulan(this)" style="padding:4px 10px;border-radius:20px;border:1.5px solid rgba(3,69,67,.25);font-size:.75rem;font-weight:600;color:var(--g);background:white;cursor:pointer;font-family:'Inter',sans-serif;outline:none">
     <option value="" selected>-- Pilih Bulan --</option>
-    <option value="Jan-25">Jan-25</option><option value="Feb-25">Feb-25</option><option value="Mar-25">Mar-25</option><option value="Apr-25">Apr-25</option><option value="Mei-25">Mei-25</option><option value="Jun-25">Jun-25</option><option value="Jul-25">Jul-25</option><option value="Agt-25">Agt-25</option><option value="Sep-25">Sep-25</option><option value="Okt-25">Okt-25</option><option value="Nov-25">Nov-25</option><option value="Des-25">Des-25</option><option value="Jan-26">Jan-26</option><option value="Feb-26">Feb-26</option>
+    <option value="Jan-25">Jan-25</option><option value="Feb-25">Feb-25</option><option value="Mar-25">Mar-25</option><option value="Apr-25">Apr-25</option><option value="Mei-25">Mei-25</option><option value="Jun-25">Jun-25</option><option value="Agt-25">Agt-25</option><option value="Sep-25">Sep-25</option><option value="Okt-25">Okt-25</option><option value="Nov-25">Nov-25</option><option value="Des-25">Des-25</option><option value="Jan-26">Jan-26</option><option value="Feb-26">Feb-26</option>
   </select>
-  <span id="periodLabel" class="period-badge">Semua 14 Bulan</span>
+  <span id="periodLabel" class="period-badge">Semua 13 Bulan</span>
+  <label style="margin-left:auto;padding:4px 12px;background:#034543;color:#fff;border-radius:20px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">
+    📤 Update Data
+    <input type="file" id="globalOlseraInput" accept=".xlsx" multiple style="display:none" onchange="handleGlobalUpload(this.files)">
+  </label>
+  <span id="globalUploadStatus" style="font-size:.72rem;color:#64748b;font-weight:500;white-space:nowrap"></span>
 </div>
 
 <div class="main">
@@ -124,10 +129,10 @@
 <!-- DASHBOARD -->
 <div id="tab-dashboard" class="tab-content active">
   <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-icon">💰</div><div class="kpi-label" id="kpi-omzet-label">Total Omzet (14 Bln)</div><div class="kpi-value" id="kpi-omzet">Rp —</div><div class="kpi-sub" id="kpi-omzet-sub">Jan-25 – Feb-26</div></div>
+    <div class="kpi-card"><div class="kpi-icon">💰</div><div class="kpi-label" id="kpi-omzet-label">Total Omzet (13 Bln)</div><div class="kpi-value" id="kpi-omzet">Rp —</div><div class="kpi-sub" id="kpi-omzet-sub">Jan-25 – Feb-26</div></div>
     <div class="kpi-card"><div class="kpi-icon">📈</div><div class="kpi-label">Total Profit</div><div class="kpi-value" id="kpi-profit">Rp —</div><div class="kpi-sub" id="kpi-margin-sub">Margin rata-rata: —%</div></div>
-    <div class="kpi-card"><div class="kpi-icon">📅</div><div class="kpi-label" id="kpi-avg-label">Rata-rata/Bulan</div><div class="kpi-value" id="kpi-avg">Rp —</div><div class="kpi-sub" id="kpi-avg-sub">dari 14 bulan</div></div>
-    <div class="kpi-card"><div class="kpi-icon">🏆</div><div class="kpi-label">Bulan Terkuat</div><div class="kpi-value" id="kpi-best-month">Jul-25</div><div class="kpi-sub" id="kpi-best-omzet">Rp — omzet</div></div>
+    <div class="kpi-card"><div class="kpi-icon">📅</div><div class="kpi-label" id="kpi-avg-label">Rata-rata/Bulan</div><div class="kpi-value" id="kpi-avg">Rp —</div><div class="kpi-sub" id="kpi-avg-sub">dari 13 bulan</div></div>
+    <div class="kpi-card"><div class="kpi-icon">🏆</div><div class="kpi-label">Bulan Terkuat</div><div class="kpi-value" id="kpi-best-month">Agt-25</div><div class="kpi-sub" id="kpi-best-omzet">Rp — omzet</div></div>
     <div class="kpi-card"><div class="kpi-icon">📊</div><div class="kpi-label" id="kpi-yh-label">Young Harmonis</div><div class="kpi-value" id="kpi-yh">Rp —</div><div class="kpi-sub" id="kpi-yh-sub">—% dari total</div></div>
     <div class="kpi-card"><div class="kpi-icon">⚠️</div><div class="kpi-label">SKU Margin Negatif</div><div class="kpi-value">26 SKU</div><div class="kpi-sub">Total kerugian: Rp —</div></div>
   </div>
@@ -142,7 +147,7 @@
   <div class="insight-box">
     <strong>📌 Insight Kunci</strong>
     <ul>
-      <li>Jul-25 adalah bulan tertinggi — Rp — omzet (puncak musim sekolah/PASKIBRA).</li>
+      <li>Agt-25 adalah bulan tertinggi — Rp — omzet (puncak musim sekolah/PASKIBRA).</li>
       <li>Young Harmonis menyumbang <strong>—%</strong> omzet total, Custom Orders —%.</li>
       <li>Custom Orders memiliki margin <strong>100%</strong> (tidak ada HPP tercatat).</li>
       <li>26 SKU dijual di bawah HPP — total kerugian Rp —.</li>
@@ -157,7 +162,7 @@
     <div class="filter-row">
       <label style="font-size:.82rem;font-weight:500;color:#475569">Kategori:</label>
       <select id="katFilter" onchange="updateKatChart()">
-        <option value="0">PERLENGKAPAN SEKOLAH</option><option value="1">CUSTOM</option><option value="2">PERLENGKAPAN PNS</option><option value="3">PERLENGKAPAN PASKIBRA</option><option value="4">SERAGAM KARNAVAL</option><option value="5">PERLENGKAPAN SECURITY</option><option value="6">PERLENGKAPAN PRAMUKA</option><option value="7">AKSESORIS</option>
+        <option value="0">CUSTOM</option><option value="1">PERLENGKAPAN PNS</option><option value="2">PERLENGKAPAN SEKOLAH</option><option value="3">SERAGAM KARNAVAL</option><option value="4">PERLENGKAPAN PASKIBRA</option><option value="5">PERLENGKAPAN SECURITY</option><option value="6">PERLENGKAPAN PRAMUKA</option><option value="7">AKSESORIS</option>
         <option value="99">SEMUA (Total)</option>
       </select>
     </div>
@@ -216,7 +221,7 @@
       <div class="filter-row" style="margin:0;gap:8px">
         <select id="topKatFilter" onchange="filterTopProduk()">
           <option value="">Semua Kategori</option>
-          <option>PERLENGKAPAN SEKOLAH</option><option>CUSTOM</option><option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN PASKIBRA</option><option>SERAGAM KARNAVAL</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN PRAMUKA</option><option>AKSESORIS</option><option>PERLENGKAPAN POLRI</option><option>PERLENGKAPAN TNI</option><option>PERLENGKAPAN POL PP</option><option>SEPATU PDH & PDL</option><option>PERLENGKAPAN PELAYARAN</option><option>PERL. TNI</option><option>PERL. PERBAKIN</option>
+          <option>CUSTOM</option><option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN SEKOLAH</option><option>SERAGAM KARNAVAL</option><option>PERLENGKAPAN PASKIBRA</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN PRAMUKA</option><option>AKSESORIS</option><option>PERLENGKAPAN POLRI</option><option>PERLENGKAPAN TNI</option><option>PERLENGKAPAN POL PP</option><option>SEPATU PDH & PDL</option><option>PERLENGKAPAN PELAYARAN</option><option>PERL. TNI</option><option>PERL. PERBAKIN</option>
         </select>
         <select id="topSortFilter" onchange="filterTopProduk()">
           <option value="omzet">Urutkan: Omzet</option>
@@ -395,7 +400,7 @@
         </select>
         <select id="stokKatFilter" onchange="filterStok()">
           <option value="">Semua Kategori</option>
-          <option>PERLENGKAPAN SEKOLAH</option><option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN PASKIBRA</option><option>SERAGAM KARNAVAL</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN PRAMUKA</option><option>AKSESORIS</option><option>PERLENGKAPAN POLRI</option><option>PERLENGKAPAN TNI</option><option>PERLENGKAPAN POL PP</option><option>SEPATU PDH & PDL</option><option>PERLENGKAPAN PELAYARAN</option><option>PERL. TNI</option><option>PERL. PERBAKIN</option>
+          <option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN SEKOLAH</option><option>SERAGAM KARNAVAL</option><option>PERLENGKAPAN PASKIBRA</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN PRAMUKA</option><option>AKSESORIS</option><option>PERLENGKAPAN POLRI</option><option>PERLENGKAPAN TNI</option><option>PERLENGKAPAN POL PP</option><option>SEPATU PDH & PDL</option><option>PERLENGKAPAN PELAYARAN</option><option>PERL. TNI</option><option>PERL. PERBAKIN</option>
         </select>
         <select id="stokTrendFilter" onchange="filterStok()">
           <option value="">Semua Tren</option>
@@ -485,29 +490,29 @@
 </div>
 
 </div>
-<div class="gen-info">Generated by generate_harmoni_app.py · 12 Jun 2026 06:51</div>
+<div class="gen-info">Generated by generate_harmoni_app.py · 15 Jun 2026 00:13</div>
 
 <script>
-let BULAN = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Jul-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
+let BULAN = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
 let TOTAL_BULANAN         = [];
 let TOTAL_PROFIT_BULANAN  = [];
 let TOTAL_HPP_BULANAN     = [];
 let YH_OMZET   = [];
 let YH_PROFIT  = [];
-let YH_MARGIN  = [42.41, 41.4, 27.38, 43.08, 41.19, 41.34, 39.73, 38.4, 40.21, 42.44, 40.07, 38.44, 38.7, 40.26];
+let YH_MARGIN  = [42.41, 41.4, 27.38, 43.08, 41.19, 41.34, 38.4, 40.21, 42.44, 40.07, 38.44, 38.7, 40.26];
 let CUST_OMZET = [];
-let KONTR_YH   = [60.39, 62.72, 52.48, 68.34, 73.78, 70.73, 81.87, 84.6, 63.01, 71.97, 74.53, 70.84, 71.73, 48.85];
-let KAT_NAMES          = ["PERLENGKAPAN SEKOLAH", "CUSTOM", "PERLENGKAPAN PNS", "PERLENGKAPAN PASKIBRA", "SERAGAM KARNAVAL", "PERLENGKAPAN SECURITY", "PERLENGKAPAN PRAMUKA", "AKSESORIS", "PERLENGKAPAN POLRI", "PERLENGKAPAN TNI", "PERLENGKAPAN POL PP", "SEPATU PDH & PDL", "PERLENGKAPAN PELAYARAN", "PERL. TNI", "PERL. PERBAKIN"];
+let KONTR_YH   = [60.39, 62.72, 52.48, 68.34, 73.78, 70.73, 84.6, 63.01, 71.97, 74.53, 70.84, 71.73, 48.85];
+let KAT_NAMES          = ["CUSTOM", "PERLENGKAPAN PNS", "PERLENGKAPAN SEKOLAH", "SERAGAM KARNAVAL", "PERLENGKAPAN PASKIBRA", "PERLENGKAPAN SECURITY", "PERLENGKAPAN PRAMUKA", "AKSESORIS", "PERLENGKAPAN POLRI", "PERLENGKAPAN TNI", "PERLENGKAPAN POL PP", "SEPATU PDH & PDL", "PERLENGKAPAN PELAYARAN", "PERL. TNI", "PERL. PERBAKIN"];
 let KAT_MONTHLY        = [];
 let KAT_MONTHLY_PROFIT = [];
 let KAT_MONTHLY_HPP    = [];
-let KAT_DIVISI         = ["Young Harmonis", "Custom Orders", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis"];
+let KAT_DIVISI         = ["Custom Orders", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis"];
 let RINGKASAN   = [];
 let DIVISI_DATA = [];
 let TOP_PRODUK  = [];
 let MASALAH_SKU = [];
 let STOK_DATA   = [];
-const BULAN_ORDER = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Jul-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
+const BULAN_ORDER = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
 const DIVISI_MAP  = {"AKSESORIS": "Young Harmonis", "CUSTOM": "Custom Orders", "PERL. PERBAKIN": "Young Harmonis", "PERL. TNI": "Young Harmonis", "PERLENGKAPAN PASKIBRA": "Young Harmonis", "PERLENGKAPAN PELAYARAN": "Young Harmonis", "PERLENGKAPAN PNS": "Young Harmonis", "PERLENGKAPAN POL PP": "Young Harmonis", "PERLENGKAPAN POLRI": "Young Harmonis", "PERLENGKAPAN PRAMUKA": "Young Harmonis", "PERLENGKAPAN SECURITY": "Young Harmonis", "PERLENGKAPAN SEKOLAH": "Young Harmonis", "PERLENGKAPAN TNI": "Young Harmonis", "SEPATU PDH & PDL": "Young Harmonis", "SERAGAM KARNAVAL": "Young Harmonis"};
 
 // ── Olsera Upload ─────────────────────────────────────────────────────────────
@@ -523,6 +528,20 @@ function bulanDariFile(fname){
 function bulanSortKey(b){
   const p=b.split('-');
   return parseInt('20'+p[1])*100+(MONTH_NUM_JS[p[0]]||0);
+}
+
+function handleGlobalUpload(files){
+  const st=document.getElementById('globalUploadStatus');
+  st.textContent='⏳ Memuat...';
+  if(typeof XLSX==='undefined'){
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    s.onload=()=>processOlseraFiles(files,st);
+    s.onerror=()=>{st.textContent='⚠️ Gagal memuat library.';};
+    document.head.appendChild(s);
+    return;
+  }
+  processOlseraFiles(files,st);
 }
 
 function handleOlseraUpload(files){
@@ -565,14 +584,14 @@ function processOlseraFiles(files,st){
         const iQ=ci('sold qty'),iO=ci('total sales amount'),iH=ci('total cost price'),iPr=ci('profit');
         for(let r=hRow+1;r<rows.length;r++){
           const row=rows[r];
-          const sku=String(row[iS]||'').trim();
-          if(!sku) continue;
+          let sku=String(row[iS]||'').trim();
+          const kat=String(row[iG]||'').toUpperCase().trim();
+          if(!sku){if(kat==='CUSTOM')sku='CUSTOM';else continue;}
           const qty=parseFloat(row[iQ])||0;
           if(qty<=0) continue;
           const omzet=parseFloat(row[iO])||0;
           const hpp=parseFloat(row[iH])||0;
           const profit=parseFloat(row[iPr])||0;
-          const kat=String(row[iG]||'').toUpperCase().trim();
           const divisi=DIVISI_MAP[kat]||'Young Harmonis';
           rawRows.push({bulan,divisi,kategori:kat,produk:String(row[iP]||'').trim(),
             varian:String(row[iV]||'').trim(),sku,qty,omzet,hpp,profit});
@@ -669,9 +688,18 @@ function rebuildAllData(rawRows){
     const r3avg=+(rec3/3).toFixed(1);
     const tpct=prev3>0?(rec3-prev3)/prev3*100:rec3>0?100:0;
     const trend=tpct>20?'naik':tpct<-20?'turun':'stabil';
-    const rek=Math.max(1,Math.round(r3avg*(trend==='naik'?1.3:trend==='turun'?0.9:1.1)));
+    // Seasonality detection
+    const calQty={};
+    allBulan.forEach((b,bi)=>{const mn=MONTH_NUM_JS[b.split('-')[0]]||0;if(!calQty[mn])calQty[mn]=[];calQty[mn].push(q[bi]);});
+    const calAvg={};Object.keys(calQty).forEach(mn=>{calQty[mn].forEach(v=>{calAvg[mn]=(calAvg[mn]||0)+v/calQty[mn].length;});});
+    const peakMn=Object.keys(calAvg).reduce((a,b)=>calAvg[a]>calAvg[b]?a:b,Object.keys(calAvg)[0]||'0');
+    const peakAvg=calAvg[peakMn]||0;
+    const overallAvg=tot/Math.max(N,1);
+    const isSeasonal=peakAvg/Math.max(overallAvg,0.001)>=2.5&&tot>=10&&act>=3;
+    const peakMonthName=MONTH_ID_JS[parseInt(peakMn)]||'';
+    const rek=isSeasonal?Math.max(1,Math.round(peakAvg*1.2)):Math.max(1,Math.round(r3avg*(trend==='naik'?1.3:trend==='turun'?0.9:1.1)));
     const last=[...allBulan].reverse().find(b=>skuMonthly[sku][bidx[b]]>0)||'';
-    stok.push({sku,produk:inf.produk,varian:inf.varian,kategori:inf.kategori,divisi:inf.divisi,harga_unit:inf.harga_unit,hpp_unit:inf.hpp_unit,total_qty:tot,months_active:act,avg_per_bulan:+(tot/Math.max(act,1)).toFixed(1),recent3_avg:r3avg,trend,trend_pct:+tpct.toFixed(1),rek_qty:rek,last_sold:last,monthly:[...q]});
+    stok.push({sku,produk:inf.produk,varian:inf.varian,kategori:inf.kategori,divisi:inf.divisi,harga_unit:inf.harga_unit,hpp_unit:inf.hpp_unit,total_qty:tot,months_active:act,avg_per_bulan:+(tot/Math.max(act,1)).toFixed(1),recent3_avg:r3avg,trend,trend_pct:+tpct.toFixed(1),is_seasonal:isSeasonal,peak_month:peakMonthName,rek_qty:rek,last_sold:last,monthly:[...q]});
   });
   STOK_DATA=stok.sort((a,b)=>b.total_qty-a.total_qty);
 
