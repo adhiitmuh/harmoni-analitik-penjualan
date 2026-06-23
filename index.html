@@ -1133,6 +1133,16 @@ function uploadStokFisik(files, jenis){
       }
       filterStok();
       filterInventori();
+      // Simpan ke Firestore agar sinkron lintas perangkat
+      (async()=>{
+        try{
+          if(typeof _app==='undefined') return;
+          const upd={[jenis]:map};
+          upd[jenis+'_updated_at']=firebase.firestore.FieldValue.serverTimestamp();
+          if(typeof _currentUserName!=='undefined'&&_currentUserName) upd[jenis+'_updated_by']=_currentUserName;
+          await _app.firestore().collection('settings').doc('stok_fisik').set(upd,{merge:true});
+        }catch(e){console.error('Gagal simpan stok ke Firestore:',e);}
+      })();
     };
     Array.from(files).forEach(file=>{
       const reader=new FileReader();
@@ -1412,7 +1422,22 @@ _app.auth().onAuthStateChanged(async user => {
     } catch(e) { console.error('Gagal load stok dari Firestore:', e); }
   } catch(e) {
     elLoading.style.display = 'none';
-    elDenied.style.display  = 'block';
+    if(e && (e.code === 'permission-denied' || e.code === 'PERMISSION_DENIED')) {
+      elDenied.style.display = 'block';
+    } else {
+      // Error jaringan / sementara — tampilkan pesan dan tombol coba lagi
+      elDenied.style.display = 'block';
+      const existing = document.getElementById('auth-retry-btn');
+      if(!existing){
+        const btn = document.createElement('button');
+        btn.id = 'auth-retry-btn';
+        btn.textContent = 'Coba Lagi';
+        btn.style.cssText = 'margin-top:10px;padding:9px 22px;background:#034543;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:.9rem';
+        btn.onclick = () => location.reload();
+        elDenied.appendChild(btn);
+      }
+    }
+    console.error('Auth error:', e);
   }
 });
 

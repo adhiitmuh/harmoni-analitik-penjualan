@@ -1610,6 +1610,16 @@ function uploadStokFisik(files, jenis){{
       }}
       filterStok();
       filterInventori();
+      // Simpan ke Firestore agar sinkron lintas perangkat
+      (async()=>{{
+        try{{
+          if(typeof _app==='undefined') return;
+          const upd={{[jenis]:map}};
+          upd[jenis+'_updated_at']=firebase.firestore.FieldValue.serverTimestamp();
+          if(typeof _currentUserName!=='undefined'&&_currentUserName) upd[jenis+'_updated_by']=_currentUserName;
+          await _app.firestore().collection('settings').doc('stok_fisik').set(upd,{{merge:true}});
+        }}catch(e){{console.error('Gagal simpan stok ke Firestore:',e);}}
+      }})();
     }};
     Array.from(files).forEach(file=>{{
       const reader=new FileReader();
