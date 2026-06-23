@@ -1087,6 +1087,21 @@ function finishUpload(rawRows,nFiles,st){{
   const nBulan=[...new Set(rawRows.map(r=>r.bulan))].length;
   st.textContent='✅ '+nFiles+' file · '+nBulan+' bulan · '+rawRows.length+' transaksi';
   try{{ localStorage.setItem('olsera_rawrows',JSON.stringify(rawRows)); }}catch(e){{ console.warn('localStorage penuh, data penjualan tidak tersimpan:',e); }}
+  // Simpan ke Firestore per bulan agar sinkron lintas perangkat
+  (async()=>{{
+    try{{
+      if(typeof _app==='undefined') return;
+      const db=_app.firestore();
+      const byMonth={{}};
+      rawRows.forEach(r=>{{ if(!byMonth[r.bulan]) byMonth[r.bulan]=[]; byMonth[r.bulan].push(r); }});
+      const batch=db.batch();
+      Object.entries(byMonth).forEach(([bulan,rows])=>{{
+        const ref=db.collection('penjualan').doc(bulan.replace(/[^a-zA-Z0-9]/g,'-'));
+        batch.set(ref,{{rows,updated_at:firebase.firestore.FieldValue.serverTimestamp(),updated_by:typeof _currentUserName!=='undefined'&&_currentUserName?_currentUserName:''}});
+      }});
+      await batch.commit();
+    }}catch(e){{ console.error('Gagal simpan penjualan ke Firestore:',e); }}
+  }})();
   // reset period filter ke All
   document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('active'));
   document.querySelector('.pbtn')?.classList.add('active');
