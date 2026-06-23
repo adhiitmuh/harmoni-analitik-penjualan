@@ -1360,10 +1360,26 @@ const _infoMap={{}};
 STOK_DATA.forEach(s=>{{ _infoMap[s.sku]=s; }});
 
 function isInvExcluded(sku){{ return localStorage.getItem('inv_excl_'+sku)==='1'; }}
+function getExcludedSkus(){{
+  const out=[];
+  for(let i=0;i<localStorage.length;i++){{
+    const k=localStorage.key(i);
+    if(k&&k.startsWith('inv_excl_')&&localStorage.getItem(k)==='1') out.push(k.replace('inv_excl_',''));
+  }}
+  return out;
+}}
 function toggleInvExclude(sku){{
   const was=isInvExcluded(sku);
   localStorage.setItem('inv_excl_'+sku, was?'0':'1');
   filterInventori();
+  // Simpan ke Firestore agar sinkron lintas perangkat
+  (async()=>{{
+    try{{
+      if(typeof _app==='undefined') return;
+      const skus=getExcludedSkus();
+      await _app.firestore().collection('settings').doc('inv_excluded').set({{skus,updated_at:firebase.firestore.FieldValue.serverTimestamp(),updated_by:typeof _currentUserName!=='undefined'&&_currentUserName?_currentUserName:''}});
+    }}catch(e){{ console.error('Gagal simpan excluded ke Firestore:',e); }}
+  }})();
 }}
 
 function renderInventori(items){{
