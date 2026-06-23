@@ -1086,6 +1086,7 @@ function finishUpload(rawRows,nFiles,st){{
   rebuildAllData(rawRows);
   const nBulan=[...new Set(rawRows.map(r=>r.bulan))].length;
   st.textContent='✅ '+nFiles+' file · '+nBulan+' bulan · '+rawRows.length+' transaksi';
+  try{{ localStorage.setItem('olsera_rawrows',JSON.stringify(rawRows)); }}catch(e){{ console.warn('localStorage penuh, data penjualan tidak tersimpan:',e); }}
   // reset period filter ke All
   document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('active'));
   document.querySelector('.pbtn')?.classList.add('active');
@@ -1835,6 +1836,20 @@ function downloadStokXLSX(){{
   s.onload=doExport;
   document.head.appendChild(s);
 }}
+
+// ── Auto-muat data penjualan tersimpan ──
+(function(){{
+  try{{
+    const saved=localStorage.getItem('olsera_rawrows');
+    if(!saved) return;
+    const rawRows=JSON.parse(saved);
+    if(!rawRows||!rawRows.length) return;
+    rebuildAllData(rawRows);
+    const nBulan=[...new Set(rawRows.map(r=>r.bulan))].length;
+    const st=document.getElementById('uploadStatus');
+    if(st) st.textContent='✅ Data tersimpan · '+nBulan+' bulan · '+rawRows.length+' transaksi';
+  }}catch(e){{ console.error('Gagal muat data penjualan tersimpan:',e); }}
+}})();
 </script>
 </body>
 </html>"""
