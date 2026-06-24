@@ -117,7 +117,7 @@
     <option value="" selected>-- Pilih Bulan --</option>
     <option value="Jan-25">Jan-25</option><option value="Feb-25">Feb-25</option><option value="Mar-25">Mar-25</option><option value="Apr-25">Apr-25</option><option value="Mei-25">Mei-25</option><option value="Jun-25">Jun-25</option><option value="Agt-25">Agt-25</option><option value="Sep-25">Sep-25</option><option value="Okt-25">Okt-25</option><option value="Nov-25">Nov-25</option><option value="Des-25">Des-25</option><option value="Jan-26">Jan-26</option><option value="Feb-26">Feb-26</option>
   </select>
-  <span id="periodLabel" class="period-badge">Semua 13 Bulan</span>
+  <span id="periodLabel" class="period-badge">Memuat...</span>
   <label style="margin-left:auto;padding:4px 12px;background:#034543;color:#fff;border-radius:20px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">
     📤 Update Data
     <input type="file" id="globalOlseraInput" accept=".xlsx" multiple style="display:none" onchange="handleGlobalUpload(this.files)">
@@ -722,6 +722,7 @@ function rebuildAllData(rawRows){
 
   // Reset period filter dan re-render
   FILTERED_IDX=BULAN.map((_,i)=>i);
+  document.getElementById('periodLabel').textContent='Semua '+BULAN.length+' Bulan';
   // Rebuild year buttons
   const yrs=[...new Set(BULAN.map(b=>'20'+b.split('-')[1]))].sort();
   const pbar=document.querySelector('.period-bar');
