@@ -138,11 +138,11 @@
   </div>
   <div class="chart-grid-3">
     <div class="card"><div class="card-title">📈 Tren Omzet Bulanan</div><div style="position:relative;height:280px"><canvas id="cTren"></canvas></div></div>
-    <div class="card"><div class="card-title">🍩 Distribusi Omzet Per Kategori</div><div style="position:relative;height:280px"><canvas id="cDonut"></canvas></div></div>
+    <div class="card"><div class="card-title">🍩 Distribusi Omzet Per Kategori</div><div style="position:relative;height:360px"><canvas id="cDonut"></canvas></div></div>
   </div>
   <div class="chart-grid">
     <div class="card"><div class="card-title">💼 Young Harmonis vs Custom Orders</div><div style="position:relative;height:240px"><canvas id="cDivisiBar"></canvas></div></div>
-    <div class="card"><div class="card-title">📊 Omzet Per Kategori Utama</div><div style="position:relative;height:240px"><canvas id="cKatBar"></canvas></div></div>
+    <div class="card"><div class="card-title">📊 Omzet Per Kategori Utama</div><div style="position:relative;height:420px"><canvas id="cKatBar"></canvas></div></div>
   </div>
   <div class="insight-box">
     <strong>📌 Insight Kunci</strong>
@@ -807,13 +807,15 @@ function applyPeriodFilter(idx){
   // Donut + KatBar: recompute per-kategori totals for filtered period
   const fKatOmzet = KAT_MONTHLY.map(m=>idx.reduce((s,i)=>s+m[i],0));
   const fKatProfit = KAT_MONTHLY_PROFIT.map(m=>idx.reduce((s,i)=>s+m[i],0));
-  const top6 = KAT_NAMES.map((nm,i)=>{return{nm,omzet:fKatOmzet[i],profit:fKatProfit[i]};})
-    .sort((a,b)=>b.omzet-a.omzet).slice(0,6);
-  cDonut.data.labels = top6.map(k=>k.nm.replace('PERLENGKAPAN ','').replace('SERAGAM ',''));
-  cDonut.data.datasets[0].data = top6.map(k=>k.omzet);
+  const allKat = KAT_NAMES.map((nm,i)=>{return{nm,omzet:fKatOmzet[i],profit:fKatProfit[i]};})
+    .sort((a,b)=>b.omzet-a.omzet);
+  cDonut.data.labels = allKat.map(k=>k.nm.replace('PERLENGKAPAN ','').replace('SERAGAM ',''));
+  cDonut.data.datasets[0].data = allKat.map(k=>k.omzet);
+  cDonut.data.datasets[0].backgroundColor = allKat.map((_,i)=>COLORS[i%COLORS.length]);
   cDonut.update();
-  cKatBar.data.labels = top6.map(k=>k.nm.length>18?k.nm.slice(0,18)+'…':k.nm);
-  cKatBar.data.datasets[0].data = top6.map(k=>k.omzet);
+  cKatBar.data.labels = allKat.map(k=>k.nm.length>22?k.nm.slice(0,22)+'…':k.nm);
+  cKatBar.data.datasets[0].data = allKat.map(k=>k.omzet);
+  cKatBar.data.datasets[0].backgroundColor = allKat.map((_,i)=>COLORS[i%COLORS.length]);
   cKatBar.update();
 
   // KatLine: update with filtered months
@@ -851,7 +853,7 @@ function setPeriod(mode, btn){
   applyPeriodFilter(idx);
 }
 
-const COLORS = ['#034543','#1a8b88','#2eb8b4','#c2a000','#ea580c','#7c3aed','#dc2626','#d97706'];
+const COLORS = ['#034543','#1a8b88','#2eb8b4','#c2a000','#ea580c','#7c3aed','#dc2626','#d97706','#059669','#0284c7','#9333ea','#e11d48','#f59e0b','#10b981','#6366f1'];
 
 Chart.defaults.font.family="'Inter',-apple-system,BlinkMacSystemFont,sans-serif";
 Chart.defaults.font.size=11;
@@ -1037,9 +1039,9 @@ function showTab(id,btn){
 
 // Charts (named for period filter updates)
 const cTren = new Chart(document.getElementById('cTren'),{type:'line',data:{labels:BULAN,datasets:[{label:'Total Omzet',data:TOTAL_BULANAN,borderColor:'#034543',backgroundColor:'rgba(3,69,67,.08)',fill:true,tension:.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{y:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}}});
-const cDonut = new Chart(document.getElementById('cDonut'),{type:'doughnut',data:{labels:RINGKASAN.slice(0,6).map(r=>r.nama.replace('PERLENGKAPAN ','').replace('SERAGAM ','')),datasets:[{data:RINGKASAN.slice(0,6).map(r=>r.omzet),backgroundColor:COLORS,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},padding:10}},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},cutout:'60%'}});
+const cDonut = new Chart(document.getElementById('cDonut'),{type:'doughnut',data:{labels:RINGKASAN.map(r=>r.nama.replace('PERLENGKAPAN ','').replace('SERAGAM ','')),datasets:[{data:RINGKASAN.map(r=>r.omzet),backgroundColor:RINGKASAN.map((_,i)=>COLORS[i%COLORS.length]),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:9},padding:8}},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},cutout:'60%'}});
 const cDivisiBar = new Chart(document.getElementById('cDivisiBar'),{type:'bar',data:{labels:BULAN,datasets:[{label:'Young Harmonis',data:YH_OMZET,backgroundColor:'rgba(3,69,67,.85)',borderRadius:4},{label:'Custom Orders',data:CUST_OMZET,backgroundColor:'rgba(194,160,0,.8)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}}}}});
-const cKatBar = new Chart(document.getElementById('cKatBar'),{type:'bar',data:{labels:RINGKASAN.slice(0,6).map(r=>r.nama.length>18?r.nama.slice(0,18)+'…':r.nama),datasets:[{label:'Omzet',data:RINGKASAN.slice(0,6).map(r=>r.omzet),backgroundColor:COLORS,borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},y:{grid:{display:false}}}}});
+const cKatBar = new Chart(document.getElementById('cKatBar'),{type:'bar',data:{labels:RINGKASAN.map(r=>r.nama.length>22?r.nama.slice(0,22)+'…':r.nama),datasets:[{label:'Omzet',data:RINGKASAN.map(r=>r.omzet),backgroundColor:RINGKASAN.map((_,i)=>COLORS[i%COLORS.length]),borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
 const cDivisiLine = new Chart(document.getElementById('cDivisiLine'),{type:'line',data:{labels:BULAN,datasets:[{label:'Young Harmonis',data:YH_OMZET,borderColor:'#034543',backgroundColor:'rgba(3,69,67,.08)',fill:true,tension:.4,pointRadius:4},{label:'Custom Orders',data:CUST_OMZET,borderColor:'#c2a000',backgroundColor:'rgba(194,160,0,.07)',fill:true,tension:.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{y:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}}});
 
 let cTopOmzet = new Chart(document.getElementById('cTopOmzet'),{type:'bar',data:{labels:[],datasets:[{label:'Omzet',data:[],backgroundColor:'#034543',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
