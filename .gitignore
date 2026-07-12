@@ -1,3 +1,6 @@
 data_olsera/
 Harmoni_Analitik_App.html
 *.xlsx
+node_modules/
+package-lock.json
+package.json
