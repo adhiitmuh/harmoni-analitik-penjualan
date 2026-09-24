@@ -6,6 +6,7 @@
 <title>Harmoni Analitik Stok dan Penjualan</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -530,44 +531,40 @@ function bulanSortKey(b){
   return parseInt('20'+p[1])*100+(MONTH_NUM_JS[p[0]]||0);
 }
 
+function loadXlsxThen(cb,st){
+  if(typeof XLSX!=='undefined'){cb();return;}
+  st.textContent='⏳ Memuat library...';
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+  const timer=setTimeout(()=>{st.textContent='⚠️ Koneksi lambat. Refresh halaman lalu coba lagi.';},12000);
+  s.onload=()=>{clearTimeout(timer);cb();};
+  s.onerror=()=>{clearTimeout(timer);st.textContent='⚠️ Gagal memuat library Excel. Cek koneksi internet.';};
+  document.head.appendChild(s);
+}
+
 function handleGlobalUpload(files){
   const st=document.getElementById('globalUploadStatus');
-  st.textContent='⏳ Memuat...';
-  if(typeof XLSX==='undefined'){
-    const s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-    s.onload=()=>processOlseraFiles(files,st);
-    s.onerror=()=>{st.textContent='⚠️ Gagal memuat library.';};
-    document.head.appendChild(s);
-    return;
-  }
-  processOlseraFiles(files,st);
+  st.textContent='⏳ Membaca file...';
+  loadXlsxThen(()=>processOlseraFiles(files,st),st);
 }
 
 function handleOlseraUpload(files){
   if(!files||!files.length) return;
   const st=document.getElementById('uploadStatus');
-  st.textContent='⏳ Memuat...';
-  if(typeof XLSX==='undefined'){
-    const s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-    s.onload=()=>processOlseraFiles(files,st);
-    s.onerror=()=>{st.textContent='⚠️ Gagal memuat library Excel. Cek koneksi internet.';};
-    document.head.appendChild(s);
-    return;
-  }
-  processOlseraFiles(files,st);
+  st.textContent='⏳ Membaca file...';
+  loadXlsxThen(()=>processOlseraFiles(files,st),st);
 }
 
 function processOlseraFiles(files,st){
   st.textContent='⏳ Membaca '+files.length+' file...';
   const rawRows=[];
+  const errors=[];
   let done=0;
   Array.from(files).forEach(file=>{
     const bulan=bulanDariFile(file.name);
     if(!bulan){
-      st.textContent='⚠️ Nama file tidak dikenali: '+file.name;
-      done++; if(done===files.length) finishUpload(rawRows,files.length,st);
+      errors.push('Nama file tidak dikenali: '+file.name+' (perlu format YYYY-MM-DD di nama file)');
+      done++; if(done===files.length) finishUpload(rawRows,files.length,st,errors);
       return;
     }
     const reader=new FileReader();
@@ -577,7 +574,11 @@ function processOlseraFiles(files,st){
         const ws=wb.Sheets[wb.SheetNames[0]];
         const rows=XLSX.utils.sheet_to_json(ws,{header:1});
         const hRow=rows.findIndex(r=>r[0]&&String(r[0]).toLowerCase().trim()==='product');
-        if(hRow<0){ done++; if(done===files.length) finishUpload(rawRows,files.length,st); return; }
+        if(hRow<0){
+          const firstCell=rows[0]?String(rows[0][0]||'').slice(0,30):'(kosong)';
+          errors.push(file.name+': kolom "product" tidak ditemukan (baris pertama: "'+firstCell+'")');
+          done++; if(done===files.length) finishUpload(rawRows,files.length,st,errors); return;
+        }
         const hdrs=rows[hRow].map(h=>h?String(h).toLowerCase().trim():'');
         const ci=n=>hdrs.indexOf(n);
         const iP=ci('product'),iV=ci('variant'),iG=ci('group'),iS=ci('sku');
@@ -596,16 +597,22 @@ function processOlseraFiles(files,st){
           rawRows.push({bulan,divisi,kategori:kat,produk:String(row[iP]||'').trim(),
             varian:String(row[iV]||'').trim(),sku,qty,omzet,hpp,profit});
         }
-      }catch(err){console.error(err);}
+      }catch(err){errors.push(file.name+': error membaca file ('+err.message+')');console.error(err);}
       done++;
-      if(done===files.length) finishUpload(rawRows,files.length,st);
+      if(done===files.length) finishUpload(rawRows,files.length,st,errors);
     };
+    reader.onerror=()=>{errors.push(file.name+': gagal dibaca');done++;if(done===files.length)finishUpload(rawRows,files.length,st,errors);};
     reader.readAsArrayBuffer(file);
   });
 }
 
-function finishUpload(rawRows,nFiles,st){
-  if(!rawRows.length){ st.textContent='⚠️ Data tidak terbaca'; return; }
+function finishUpload(rawRows,nFiles,st,errors=[]){
+  if(!rawRows.length){
+    const errDetail=errors.length?' — '+errors[0]:'';
+    st.textContent='⚠️ Data tidak terbaca'+errDetail;
+    if(errors.length>1) console.warn('Upload errors:',errors);
+    return;
+  }
   rebuildAllData(rawRows);
   const nBulan=[...new Set(rawRows.map(r=>r.bulan))].length;
   st.textContent='✅ '+nFiles+' file · '+nBulan+' bulan · '+rawRows.length+' transaksi';
