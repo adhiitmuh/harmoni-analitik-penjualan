@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Harmoni Analitik Stok dan Penjualan</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
   :root{--g:#034543;--g2:#055a57;--g3:#0a7874;--g4:#1a8b88;--beige:#FFFBD5;--beige2:#f5f0b8;--white:#FAFAFA;--black:#282828;--gray:#64748b}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -19,8 +20,8 @@
   .header-logo span{font-size:.8rem;font-weight:400;opacity:.7;margin-left:4px}
   .header .sub{font-size:.75rem;opacity:.6;margin-top:3px;font-weight:500}
   .header .badge{background:rgba(255,251,213,.18);border:1px solid rgba(255,251,213,.3);padding:4px 14px;border-radius:20px;font-size:.73rem;color:var(--beige)}
-  .nav{background:white;border-bottom:2px solid rgba(3,69,67,.08);padding:0 24px;display:flex;gap:0;overflow-x:auto}
-  .nav-btn{padding:13px 19px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:#94a3b8;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;font-family:'Inter',sans-serif}
+  .nav{background:white;border-bottom:2px solid rgba(3,69,67,.08);padding:0 24px;display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .nav-btn{padding:13px 19px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:#94a3b8;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;font-family:'Inter',sans-serif;touch-action:manipulation;-webkit-tap-highlight-color:rgba(3,69,67,.1)}
   .nav-btn:hover{color:var(--g)}
   .nav-btn.active{color:var(--g);border-bottom-color:var(--g);font-weight:700}
   .main{padding:22px;max-width:1400px;margin:0 auto}
@@ -117,7 +118,7 @@
     <option value="" selected>-- Pilih Bulan --</option>
     <option value="Jan-25">Jan-25</option><option value="Feb-25">Feb-25</option><option value="Mar-25">Mar-25</option><option value="Apr-25">Apr-25</option><option value="Mei-25">Mei-25</option><option value="Jun-25">Jun-25</option><option value="Agt-25">Agt-25</option><option value="Sep-25">Sep-25</option><option value="Okt-25">Okt-25</option><option value="Nov-25">Nov-25</option><option value="Des-25">Des-25</option><option value="Jan-26">Jan-26</option><option value="Feb-26">Feb-26</option>
   </select>
-  <span id="periodLabel" class="period-badge">Semua 13 Bulan</span>
+  <span id="periodLabel" class="period-badge">Memuat...</span>
   <label style="margin-left:auto;padding:4px 12px;background:#034543;color:#fff;border-radius:20px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">
     📤 Update Data
     <input type="file" id="globalOlseraInput" accept=".xlsx" multiple style="display:none" onchange="handleGlobalUpload(this.files)">
@@ -139,11 +140,11 @@
   </div>
   <div class="chart-grid-3">
     <div class="card"><div class="card-title">📈 Tren Omzet Bulanan</div><div style="position:relative;height:280px"><canvas id="cTren"></canvas></div></div>
-    <div class="card"><div class="card-title">🍩 Distribusi Omzet Per Kategori</div><div style="position:relative;height:280px"><canvas id="cDonut"></canvas></div></div>
+    <div class="card"><div class="card-title">🍩 Distribusi Omzet Per Kategori</div><div style="position:relative;height:360px"><canvas id="cDonut"></canvas></div></div>
   </div>
   <div class="chart-grid">
     <div class="card"><div class="card-title">💼 Young Harmonis vs Custom Orders</div><div style="position:relative;height:240px"><canvas id="cDivisiBar"></canvas></div></div>
-    <div class="card"><div class="card-title">📊 Omzet Per Kategori Utama</div><div style="position:relative;height:240px"><canvas id="cKatBar"></canvas></div></div>
+    <div class="card"><div class="card-title">📊 Omzet Per Kategori Utama</div><div style="position:relative;height:420px"><canvas id="cKatBar"></canvas></div></div>
   </div>
   <div class="insight-box">
     <strong>📌 Insight Kunci</strong>
@@ -512,6 +513,7 @@ let RINGKASAN   = [];
 let DIVISI_DATA = [];
 let TOP_PRODUK  = [];
 let MASALAH_SKU = [];
+let currentStokData = [];
 let STOK_DATA   = [];
 const BULAN_ORDER = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
 const DIVISI_MAP  = {"AKSESORIS": "Young Harmonis", "CUSTOM": "Custom Orders", "PERL. PERBAKIN": "Young Harmonis", "PERL. TNI": "Young Harmonis", "PERLENGKAPAN PASKIBRA": "Young Harmonis", "PERLENGKAPAN PELAYARAN": "Young Harmonis", "PERLENGKAPAN PNS": "Young Harmonis", "PERLENGKAPAN POL PP": "Young Harmonis", "PERLENGKAPAN POLRI": "Young Harmonis", "PERLENGKAPAN PRAMUKA": "Young Harmonis", "PERLENGKAPAN SECURITY": "Young Harmonis", "PERLENGKAPAN SEKOLAH": "Young Harmonis", "PERLENGKAPAN TNI": "Young Harmonis", "SEPATU PDH & PDL": "Young Harmonis", "SERAGAM KARNAVAL": "Young Harmonis"};
@@ -616,6 +618,22 @@ function finishUpload(rawRows,nFiles,st,errors=[]){
   rebuildAllData(rawRows);
   const nBulan=[...new Set(rawRows.map(r=>r.bulan))].length;
   st.textContent='✅ '+nFiles+' file · '+nBulan+' bulan · '+rawRows.length+' transaksi';
+  try{ localStorage.setItem('olsera_rawrows',JSON.stringify(rawRows)); }catch(e){ console.warn('localStorage penuh, data penjualan tidak tersimpan:',e); }
+  // Simpan ke Firestore per bulan agar sinkron lintas perangkat
+  (async()=>{
+    try{
+      if(typeof _app==='undefined') return;
+      const db=_app.firestore();
+      const byMonth={};
+      rawRows.forEach(r=>{ if(!byMonth[r.bulan]) byMonth[r.bulan]=[]; byMonth[r.bulan].push(r); });
+      const batch=db.batch();
+      Object.entries(byMonth).forEach(([bulan,rows])=>{
+        const ref=db.collection('penjualan').doc(bulan.replace(/[^a-zA-Z0-9]/g,'-'));
+        batch.set(ref,{rows,updated_at:firebase.firestore.FieldValue.serverTimestamp(),updated_by:typeof _currentUserName!=='undefined'&&_currentUserName?_currentUserName:''});
+      });
+      await batch.commit();
+    }catch(e){ console.error('Gagal simpan penjualan ke Firestore:',e); }
+  })();
   // reset period filter ke All
   document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('active'));
   document.querySelector('.pbtn')?.classList.add('active');
@@ -712,6 +730,7 @@ function rebuildAllData(rawRows){
 
   // Reset period filter dan re-render
   FILTERED_IDX=BULAN.map((_,i)=>i);
+  document.getElementById('periodLabel').textContent='Semua '+BULAN.length+' Bulan';
   // Rebuild year buttons
   const yrs=[...new Set(BULAN.map(b=>'20'+b.split('-')[1]))].sort();
   const pbar=document.querySelector('.period-bar');
@@ -746,8 +765,8 @@ function getFilteredIdx(mode){
 
 function fmtMjs(v){
   if(!v||v===0)return '—';
-  if(v>=1e9)return 'Rp '+(v/1e9).toFixed(2)+' M';
-  if(v>=1e6)return 'Rp '+(v/1e6).toFixed(1)+' Jt';
+  if(v>=1e9)return 'Rp '+(v/1e9).toFixed(3)+' M';
+  if(v>=1e6)return 'Rp '+(v/1e6).toFixed(2)+' Jt';
   return 'Rp '+Math.round(v).toLocaleString('id-ID');
 }
 
@@ -798,13 +817,15 @@ function applyPeriodFilter(idx){
   // Donut + KatBar: recompute per-kategori totals for filtered period
   const fKatOmzet = KAT_MONTHLY.map(m=>idx.reduce((s,i)=>s+m[i],0));
   const fKatProfit = KAT_MONTHLY_PROFIT.map(m=>idx.reduce((s,i)=>s+m[i],0));
-  const top6 = KAT_NAMES.map((nm,i)=>{return{nm,omzet:fKatOmzet[i],profit:fKatProfit[i]};})
-    .sort((a,b)=>b.omzet-a.omzet).slice(0,6);
-  cDonut.data.labels = top6.map(k=>k.nm.replace('PERLENGKAPAN ','').replace('SERAGAM ',''));
-  cDonut.data.datasets[0].data = top6.map(k=>k.omzet);
+  const allKat = KAT_NAMES.map((nm,i)=>{return{nm,omzet:fKatOmzet[i],profit:fKatProfit[i]};})
+    .sort((a,b)=>b.omzet-a.omzet);
+  cDonut.data.labels = allKat.map(k=>k.nm.replace('PERLENGKAPAN ','').replace('SERAGAM ',''));
+  cDonut.data.datasets[0].data = allKat.map(k=>k.omzet);
+  cDonut.data.datasets[0].backgroundColor = allKat.map((_,i)=>COLORS[i%COLORS.length]);
   cDonut.update();
-  cKatBar.data.labels = top6.map(k=>k.nm.length>18?k.nm.slice(0,18)+'…':k.nm);
-  cKatBar.data.datasets[0].data = top6.map(k=>k.omzet);
+  cKatBar.data.labels = allKat.map(k=>k.nm.length>22?k.nm.slice(0,22)+'…':k.nm);
+  cKatBar.data.datasets[0].data = allKat.map(k=>k.omzet);
+  cKatBar.data.datasets[0].backgroundColor = allKat.map((_,i)=>COLORS[i%COLORS.length]);
   cKatBar.update();
 
   // KatLine: update with filtered months
@@ -842,18 +863,25 @@ function setPeriod(mode, btn){
   applyPeriodFilter(idx);
 }
 
-const COLORS = ['#034543','#1a8b88','#2eb8b4','#c2a000','#ea580c','#7c3aed','#dc2626','#d97706'];
+const COLORS = ['#034543','#1a8b88','#2eb8b4','#c2a000','#ea580c','#7c3aed','#dc2626','#d97706','#059669','#0284c7','#9333ea','#e11d48','#f59e0b','#10b981','#6366f1'];
 
-Chart.defaults.font.family="'Inter',-apple-system,BlinkMacSystemFont,sans-serif";
-Chart.defaults.font.size=11;
+// ── Stok fisik: harus diinisialisasi sebelum kode Chart.js agar tetap tersedia
+// walau CDN gagal load (Chart.defaults akan throw, menghentikan eksekusi)
+let STOK_TOKO   = JSON.parse(localStorage.getItem('stok_toko')||'{}');
+let STOK_GUDANG = JSON.parse(localStorage.getItem('stok_gudang')||'{}');
+
+if(typeof Chart!=='undefined'){
+  Chart.defaults.font.family="'Inter',-apple-system,BlinkMacSystemFont,sans-serif";
+  Chart.defaults.font.size=11;
+}
 
 function fmtRp(v){
   if(v==null||v===0)return '—';
   return 'Rp '+Math.round(v).toLocaleString('id-ID');
 }
 function fmtM(v){
-  if(v>=1e9)return 'Rp '+(v/1e9).toFixed(2)+' M';
-  if(v>=1e6)return 'Rp '+(v/1e6).toFixed(1)+' Jt';
+  if(v>=1e9)return 'Rp '+(v/1e9).toFixed(3)+' M';
+  if(v>=1e6)return 'Rp '+(v/1e6).toFixed(2)+' Jt';
   return 'Rp '+Math.round(v).toLocaleString('id-ID');
 }
 function pct(v,d=1){return v.toFixed(d)+'%';}
@@ -874,10 +902,26 @@ const _infoMap={};
 STOK_DATA.forEach(s=>{ _infoMap[s.sku]=s; });
 
 function isInvExcluded(sku){ return localStorage.getItem('inv_excl_'+sku)==='1'; }
+function getExcludedSkus(){
+  const out=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&k.startsWith('inv_excl_')&&localStorage.getItem(k)==='1') out.push(k.replace('inv_excl_',''));
+  }
+  return out;
+}
 function toggleInvExclude(sku){
   const was=isInvExcluded(sku);
   localStorage.setItem('inv_excl_'+sku, was?'0':'1');
   filterInventori();
+  // Simpan ke Firestore agar sinkron lintas perangkat
+  (async()=>{
+    try{
+      if(typeof _app==='undefined') return;
+      const skus=getExcludedSkus();
+      await _app.firestore().collection('settings').doc('inv_excluded').set({skus,updated_at:firebase.firestore.FieldValue.serverTimestamp(),updated_by:typeof _currentUserName!=='undefined'&&_currentUserName?_currentUserName:''});
+    }catch(e){ console.error('Gagal simpan excluded ke Firestore:',e); }
+  })();
 }
 
 function renderInventori(items){
@@ -1001,20 +1045,21 @@ function adjustTableWrapHeight(){
 window.addEventListener('resize',adjustTableWrapHeight);
 
 function showTab(id,btn){
-  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(e=>{e.classList.remove('active');e.style.display='none';});
   document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
-  document.getElementById('tab-'+id).classList.add('active');
+  const _tab=document.getElementById('tab-'+id);
+  if(_tab){_tab.classList.add('active');_tab.style.display='block';}
   btn.classList.add('active');
   window.scrollTo(0,0);
-  if(id==='inventori') filterInventori();
+  try{if(id==='inventori') filterInventori();}catch(e){console.error('filterInventori:',e);}
   if(id==='inventori'||id==='stok') setTimeout(adjustTableWrapHeight,0);
 }
 
 // Charts (named for period filter updates)
 const cTren = new Chart(document.getElementById('cTren'),{type:'line',data:{labels:BULAN,datasets:[{label:'Total Omzet',data:TOTAL_BULANAN,borderColor:'#034543',backgroundColor:'rgba(3,69,67,.08)',fill:true,tension:.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{y:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}}});
-const cDonut = new Chart(document.getElementById('cDonut'),{type:'doughnut',data:{labels:RINGKASAN.slice(0,6).map(r=>r.nama.replace('PERLENGKAPAN ','').replace('SERAGAM ','')),datasets:[{data:RINGKASAN.slice(0,6).map(r=>r.omzet),backgroundColor:COLORS,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},padding:10}},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},cutout:'60%'}});
+const cDonut = new Chart(document.getElementById('cDonut'),{type:'doughnut',data:{labels:RINGKASAN.map(r=>r.nama.replace('PERLENGKAPAN ','').replace('SERAGAM ','')),datasets:[{data:RINGKASAN.map(r=>r.omzet),backgroundColor:RINGKASAN.map((_,i)=>COLORS[i%COLORS.length]),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:9},padding:8}},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},cutout:'60%'}});
 const cDivisiBar = new Chart(document.getElementById('cDivisiBar'),{type:'bar',data:{labels:BULAN,datasets:[{label:'Young Harmonis',data:YH_OMZET,backgroundColor:'rgba(3,69,67,.85)',borderRadius:4},{label:'Custom Orders',data:CUST_OMZET,backgroundColor:'rgba(194,160,0,.8)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}}}}});
-const cKatBar = new Chart(document.getElementById('cKatBar'),{type:'bar',data:{labels:RINGKASAN.slice(0,6).map(r=>r.nama.length>18?r.nama.slice(0,18)+'…':r.nama),datasets:[{label:'Omzet',data:RINGKASAN.slice(0,6).map(r=>r.omzet),backgroundColor:COLORS,borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},y:{grid:{display:false}}}}});
+const cKatBar = new Chart(document.getElementById('cKatBar'),{plugins:[ChartDataLabels],type:'bar',data:{labels:RINGKASAN.map(r=>r.nama.length>22?r.nama.slice(0,22)+'…':r.nama),datasets:[{label:'Omzet',data:RINGKASAN.map(r=>r.omzet),backgroundColor:RINGKASAN.map((_,i)=>COLORS[i%COLORS.length]),borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}},datalabels:{anchor:'end',align:'end',formatter:v=>fmtM(v),font:{size:10,weight:'600'},color:'#334155',clip:false}},layout:{padding:{right:90}},scales:{x:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
 const cDivisiLine = new Chart(document.getElementById('cDivisiLine'),{type:'line',data:{labels:BULAN,datasets:[{label:'Young Harmonis',data:YH_OMZET,borderColor:'#034543',backgroundColor:'rgba(3,69,67,.08)',fill:true,tension:.4,pointRadius:4},{label:'Custom Orders',data:CUST_OMZET,borderColor:'#c2a000',backgroundColor:'rgba(194,160,0,.07)',fill:true,tension:.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{y:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}}});
 
 let cTopOmzet = new Chart(document.getElementById('cTopOmzet'),{type:'bar',data:{labels:[],datasets:[{label:'Omzet',data:[],backgroundColor:'#034543',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
@@ -1115,9 +1160,6 @@ function rekBadge(qty){
 }
 
 // ── Stok fisik (toko & gudang) ───────────────────────────────────────────────
-let STOK_TOKO   = JSON.parse(localStorage.getItem('stok_toko')||'{}');
-let STOK_GUDANG = JSON.parse(localStorage.getItem('stok_gudang')||'{}');
-
 function uploadStokFisik(files, jenis){
   if(!files||!files.length) return;
   const doUpload=()=>{
@@ -1140,6 +1182,16 @@ function uploadStokFisik(files, jenis){
       }
       filterStok();
       filterInventori();
+      // Simpan ke Firestore agar sinkron lintas perangkat
+      (async()=>{
+        try{
+          if(typeof _app==='undefined') return;
+          const upd={[jenis]:map};
+          upd[jenis+'_updated_at']=firebase.firestore.FieldValue.serverTimestamp();
+          if(typeof _currentUserName!=='undefined'&&_currentUserName) upd[jenis+'_updated_by']=_currentUserName;
+          await _app.firestore().collection('settings').doc('stok_fisik').set(upd,{merge:true});
+        }catch(e){console.error('Gagal simpan stok ke Firestore:',e);}
+      })();
     };
     Array.from(files).forEach(file=>{
       const reader=new FileReader();
@@ -1210,6 +1262,7 @@ function getFinal(sku){ return localStorage.getItem(stokKey(sku))||''; }
 })();
 
 function renderStok(data){
+  currentStokData = data;
   const tb=document.getElementById('tbStok');
   const cnt=document.getElementById('stokCount');
   cnt.textContent=data.length+' produk ditampilkan';
@@ -1310,12 +1363,11 @@ function stokKolomAll(visible){
 }
 
 function stokTableData(){
-  const headers=['No','SKU','Produk','Varian','Kategori','Total Qty','Avg/Bln','Avg 3Bln Terakhir','Tren','Tren %','Tipe','Puncak','Rek. Stok','Stok Toko','Stok Gudang','Total Stok','Perlu Beli','Terakhir Terjual','Final Order','Est. Modal','Est. Nilai Jual','Est. Untung'];
-  const rows=STOK_DATA.map((s,i)=>{
-    const tpct=(s.trend_pct>0?'+':'')+s.trend_pct.toFixed(0)+'%';
+  const src = currentStokData.length ? currentStokData : STOK_DATA;
+  const headers=['No','SKU','Produk','Varian','Total Qty Terjual','Stok Toko','Stok Gudang','Total Stok','Perlu Beli','Final Order','Est. Modal','Est. Nilai Jual','Est. Profit','Est. Margin'];
+  const rows=src.map((s,i)=>{
     const final=getFinal(s.sku);
     const finalNum=final?Number(final):0;
-    const tipe=s.is_seasonal?'Musiman':'Reguler';
     const stToko=STOK_TOKO[s.sku]||0;
     const stGudang=STOK_GUDANG[s.sku]||0;
     const stTotal=stToko+stGudang;
@@ -1323,9 +1375,16 @@ function stokTableData(){
     const hpp=s.hpp_unit||0;
     const harga=s.harga_unit||0;
     const qty4c=finalNum>0?finalNum:perlBeli;
-    const modal=qty4c*hpp, jual=qty4c*harga, untung=jual-modal;
-    return [i+1,s.sku,s.produk,s.varian,s.kategori,s.total_qty,s.avg_per_bulan,s.recent3_avg,s.trend,tpct,tipe,s.peak_month||'',s.rek_qty,stToko||'',stGudang||'',stTotal||'',perlBeli||'',s.last_sold||'',finalNum||'',modal||'',jual||'',untung||''];
+    const modal=qty4c*hpp, jual=qty4c*harga, profit=jual-modal;
+    const margin=jual>0?(profit/jual*100):0;
+    return [i+1,s.sku,s.produk,s.varian,s.total_qty,stToko||0,stGudang||0,stTotal||0,perlBeli||0,finalNum||0,modal,jual,profit,jual>0?+(margin.toFixed(1)):0];
   });
+  // Summary row
+  let totModal=0,totJual=0;
+  rows.forEach(r=>{totModal+=Number(r[10])||0;totJual+=Number(r[11])||0;});
+  const totProfit=totJual-totModal;
+  const totMargin=totJual>0?(totProfit/totJual*100):0;
+  rows.push(['','','','TOTAL','','','','','','',totModal,totJual,totProfit,totJual>0?+(totMargin.toFixed(1)):0]);
   return {headers,rows};
 }
 
@@ -1356,78 +1415,30 @@ function downloadStokXLSX(){
   document.head.appendChild(s);
 }
 
-// ── FIREBASE AUTH & ROLE ──
-const _fbCfg = {
-  apiKey: 'AIzaSyA9V5Lw40pDeAWeQKijYCkdvnag8AlEe74',
-  authDomain: 'harmoni-indonesia.firebaseapp.com',
-  projectId: 'harmoni-indonesia',
-  storageBucket: 'harmoni-indonesia.firebasestorage.app',
-  messagingSenderId: '825719884876',
-  appId: '1:825719884876:web:a8fd78d382e0f98cf6b8e9'
-};
-const _app = firebase.apps.find(a => a.name === 'harmoni-auth') || firebase.initializeApp(_fbCfg, 'harmoni-auth');
+// ── Auto-muat data penjualan tersimpan ──
+(function(){
+  try{
+    const saved=localStorage.getItem('olsera_rawrows');
+    if(!saved) return;
+    const rawRows=JSON.parse(saved);
+    if(!rawRows||!rawRows.length) return;
+    rebuildAllData(rawRows);
+    const nBulan=[...new Set(rawRows.map(r=>r.bulan))].length;
+    const st=document.getElementById('uploadStatus');
+    if(st) st.textContent='✅ Data tersimpan · '+nBulan+' bulan · '+rawRows.length+' transaksi';
+  }catch(e){ console.error('Gagal muat data penjualan tersimpan:',e); }
+})();
 
-_app.auth().onAuthStateChanged(async user => {
-  const overlay   = document.getElementById('auth-overlay');
-  const elLoading = document.getElementById('auth-loading');
-  const elNoLogin = document.getElementById('auth-no-login');
-  const elDenied  = document.getElementById('auth-denied');
-
-  if (!user) {
-    elLoading.style.display = 'none';
-    elNoLogin.style.display = 'block';
-    return;
+// ── ROLE BERDASARKAN URL PARAMETER ──
+// Staff: buka URL dengan ?mode=staff → hanya lihat Masalah, Inventori, Rekomendasi
+// Admin: buka URL biasa (tanpa parameter) → lihat semua tab
+(function() {
+  const mode = new URLSearchParams(window.location.search).get('mode');
+  if (mode === 'staff') {
+    document.querySelector('.header .badge').textContent = 'Staff';
+    applyRole('operator');
   }
-  try {
-    const snap    = await _app.firestore().collection('users').doc(user.uid).get();
-    const data    = snap.exists ? snap.data() : null;
-    const isOwner = data?.role === 'owner';
-    const appData = data?.apps?.harmoni_analitik;
-
-    if (!data?.aktif || (!isOwner && !appData?.akses)) {
-      elLoading.style.display = 'none';
-      elDenied.style.display  = 'block';
-      return;
-    }
-
-    overlay.style.display = 'none';
-    _currentUserName = data.nama || user.email;
-    const role = isOwner ? 'admin' : (appData.role || 'operator');
-    document.querySelector('.header .badge').textContent = _currentUserName + ' · ' + role;
-    applyRole(role);
-
-    // Sync stok dari Firestore ke semua perangkat
-    try {
-      const stokSnap = await _app.firestore().collection('settings').doc('stok_fisik').get();
-      if (stokSnap.exists) {
-        const sd = stokSnap.data();
-        if (sd.toko && Object.keys(sd.toko).length) {
-          STOK_TOKO = sd.toko;
-          localStorage.setItem('stok_toko', JSON.stringify(STOK_TOKO));
-          const nt = Object.keys(STOK_TOKO).length;
-          const lbl = '✓ Toko: ' + nt + ' SKU' + (sd.toko_updated_by ? ' · ' + sd.toko_updated_by : '') + (sd.toko_updated_at ? ' · ' + _fmtTs(sd.toko_updated_at) : '');
-          ['stokTokoLabel','invTokoLabel'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = lbl; });
-        }
-        if (sd.gudang && Object.keys(sd.gudang).length) {
-          STOK_GUDANG = sd.gudang;
-          localStorage.setItem('stok_gudang', JSON.stringify(STOK_GUDANG));
-          const ng = Object.keys(STOK_GUDANG).length;
-          const lbl = '✓ Gudang: ' + ng + ' SKU' + (sd.gudang_updated_by ? ' · ' + sd.gudang_updated_by : '') + (sd.gudang_updated_at ? ' · ' + _fmtTs(sd.gudang_updated_at) : '');
-          ['stokGudangLabel','invGudangLabel'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = lbl; });
-        }
-      }
-    } catch(e) { console.error('Gagal load stok dari Firestore:', e); }
-  } catch(e) {
-    elLoading.style.display = 'none';
-    elDenied.style.display  = 'block';
-  }
-});
-
-function _fmtTs(ts) {
-  if (!ts || !ts.toDate) return '';
-  const d = ts.toDate();
-  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-}
+})();
 
 function applyRole(role) {
   if (role === 'admin') return;
@@ -1456,26 +1467,5 @@ function applyRole(role) {
 }
 </script>
 
-<!-- AUTH OVERLAY -->
-<div id="auth-overlay" style="position:fixed;inset:0;background:rgba(3,69,67,0.94);z-index:9999;display:flex;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:16px;padding:36px 32px;width:360px;max-width:92vw;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3)">
-    <div id="auth-loading">
-      <div style="font-size:2rem;margin-bottom:12px">🔐</div>
-      <div style="font-weight:600;color:#034543;font-size:1rem">Memeriksa akses...</div>
-    </div>
-    <div id="auth-no-login" style="display:none">
-      <div style="font-size:2rem;margin-bottom:12px">🔒</div>
-      <div style="font-weight:700;color:#034543;margin-bottom:8px;font-size:1rem">Login Diperlukan</div>
-      <div style="font-size:.85rem;color:#64748b;margin-bottom:20px">Silakan login terlebih dahulu melalui Portal Harmoni Indonesia.</div>
-      <a href="https://adhiitmuh.github.io/harmoni-indonesia/" style="display:inline-block;padding:10px 22px;background:#034543;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:.9rem">Buka Portal →</a>
-    </div>
-    <div id="auth-denied" style="display:none">
-      <div style="font-size:2rem;margin-bottom:12px">⛔</div>
-      <div style="font-weight:700;color:#034543;margin-bottom:8px;font-size:1rem">Tidak Ada Akses</div>
-      <div style="font-size:.85rem;color:#64748b;margin-bottom:20px">Akun Anda belum memiliki akses ke aplikasi ini. Hubungi admin untuk mendapatkan akses.</div>
-      <a href="https://adhiitmuh.github.io/harmoni-indonesia/" style="display:inline-block;padding:10px 22px;background:#034543;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:.9rem">Kembali ke Portal →</a>
-    </div>
-  </div>
-</div>
 </body>
 </html>
