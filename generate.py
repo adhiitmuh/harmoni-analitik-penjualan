@@ -1086,6 +1086,22 @@ function finishUpload(rawRows,nFiles,st){{
   rebuildAllData(rawRows);
   const nBulan=[...new Set(rawRows.map(r=>r.bulan))].length;
   st.textContent='✅ '+nFiles+' file · '+nBulan+' bulan · '+rawRows.length+' transaksi';
+  try{{ localStorage.setItem('olsera_rawrows',JSON.stringify(rawRows)); }}catch(e){{ console.warn('localStorage penuh, data penjualan tidak tersimpan:',e); }}
+  // Simpan ke Firestore per bulan agar sinkron lintas perangkat
+  (async()=>{{
+    try{{
+      if(typeof _app==='undefined') return;
+      const db=_app.firestore();
+      const byMonth={{}};
+      rawRows.forEach(r=>{{ if(!byMonth[r.bulan]) byMonth[r.bulan]=[]; byMonth[r.bulan].push(r); }});
+      const batch=db.batch();
+      Object.entries(byMonth).forEach(([bulan,rows])=>{{
+        const ref=db.collection('penjualan').doc(bulan.replace(/[^a-zA-Z0-9]/g,'-'));
+        batch.set(ref,{{rows,updated_at:firebase.firestore.FieldValue.serverTimestamp(),updated_by:typeof _currentUserName!=='undefined'&&_currentUserName?_currentUserName:''}});
+      }});
+      await batch.commit();
+    }}catch(e){{ console.error('Gagal simpan penjualan ke Firestore:',e); }}
+  }})();
   // reset period filter ke All
   document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('active'));
   document.querySelector('.pbtn')?.classList.add('active');
@@ -1344,10 +1360,26 @@ const _infoMap={{}};
 STOK_DATA.forEach(s=>{{ _infoMap[s.sku]=s; }});
 
 function isInvExcluded(sku){{ return localStorage.getItem('inv_excl_'+sku)==='1'; }}
+function getExcludedSkus(){{
+  const out=[];
+  for(let i=0;i<localStorage.length;i++){{
+    const k=localStorage.key(i);
+    if(k&&k.startsWith('inv_excl_')&&localStorage.getItem(k)==='1') out.push(k.replace('inv_excl_',''));
+  }}
+  return out;
+}}
 function toggleInvExclude(sku){{
   const was=isInvExcluded(sku);
   localStorage.setItem('inv_excl_'+sku, was?'0':'1');
   filterInventori();
+  // Simpan ke Firestore agar sinkron lintas perangkat
+  (async()=>{{
+    try{{
+      if(typeof _app==='undefined') return;
+      const skus=getExcludedSkus();
+      await _app.firestore().collection('settings').doc('inv_excluded').set({{skus,updated_at:firebase.firestore.FieldValue.serverTimestamp(),updated_by:typeof _currentUserName!=='undefined'&&_currentUserName?_currentUserName:''}});
+    }}catch(e){{ console.error('Gagal simpan excluded ke Firestore:',e); }}
+  }})();
 }}
 
 function renderInventori(items){{
@@ -1610,6 +1642,16 @@ function uploadStokFisik(files, jenis){{
       }}
       filterStok();
       filterInventori();
+      // Simpan ke Firestore agar sinkron lintas perangkat
+      (async()=>{{
+        try{{
+          if(typeof _app==='undefined') return;
+          const upd={{[jenis]:map}};
+          upd[jenis+'_updated_at']=firebase.firestore.FieldValue.serverTimestamp();
+          if(typeof _currentUserName!=='undefined'&&_currentUserName) upd[jenis+'_updated_by']=_currentUserName;
+          await _app.firestore().collection('settings').doc('stok_fisik').set(upd,{{merge:true}});
+        }}catch(e){{console.error('Gagal simpan stok ke Firestore:',e);}}
+      }})();
     }};
     Array.from(files).forEach(file=>{{
       const reader=new FileReader();
@@ -1825,6 +1867,20 @@ function downloadStokXLSX(){{
   s.onload=doExport;
   document.head.appendChild(s);
 }}
+
+// ── Auto-muat data penjualan tersimpan ──
+(function(){{
+  try{{
+    const saved=localStorage.getItem('olsera_rawrows');
+    if(!saved) return;
+    const rawRows=JSON.parse(saved);
+    if(!rawRows||!rawRows.length) return;
+    rebuildAllData(rawRows);
+    const nBulan=[...new Set(rawRows.map(r=>r.bulan))].length;
+    const st=document.getElementById('uploadStatus');
+    if(st) st.textContent='✅ Data tersimpan · '+nBulan+' bulan · '+rawRows.length+' transaksi';
+  }}catch(e){{ console.error('Gagal muat data penjualan tersimpan:',e); }}
+}})();
 </script>
 </body>
 </html>"""
