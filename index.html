@@ -413,6 +413,7 @@
           <option value="stabil">➡️ Tren Stabil</option>
           <option value="turun">📉 Tren Turun</option>
           <option value="musiman">🗓 Musiman</option>
+          <option value="tidak_terjual">⏸ Tidak terjual (ada stok)</option>
         </select>
         <button id="btnStokKolom" onclick="toggleStokKolomPanel(event)" style="padding:6px 12px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">⚙ Kolom</button>
         <div id="stokKolomPanel">
@@ -741,6 +742,7 @@ function rebuildAllData(rawRows){
     stok.push({sku,produk:inf.produk,varian:inf.varian,kategori:inf.kategori,divisi:inf.divisi,harga_unit:inf.harga_unit,hpp_unit:inf.hpp_unit,total_qty:tot,months_active:act,avg_per_bulan:+(tot/Math.max(act,1)).toFixed(1),recent3_avg:r3avg,trend,trend_pct:+tpct.toFixed(1),is_seasonal:isSeasonal,peak_month:peakMonthName,rek_qty:rek,last_sold:last,monthly:[...q]});
   });
   STOK_DATA=stok.sort((a,b)=>b.total_qty-a.total_qty);
+  mergeInfoMap(STOK_DATA);
 
   // Reset period filter dan re-render
   FILTERED_IDX=BULAN.map((_,i)=>i);
@@ -759,7 +761,8 @@ function rebuildAllData(rawRows){
   refreshBulanPicker();
 
   applyPeriodFilter(FILTERED_IDX);
-  renderStok(STOK_DATA);
+  filterStok();
+  filterInventori();
   updateTotalBudget();
   renderMas(MASALAH_SKU);
 }
@@ -912,8 +915,27 @@ function mBar(m,max=100){
 }
 
 // ── Inventori Stok ────────────────────────────────────────────────────────────
+// Info produk (nama, kategori, HPP, harga) per SKU. Data baru menimpa yang lama,
+// tapi SKU yang tidak terjual di data baru tetap punya nama dari data sebelumnya.
 const _infoMap={};
-STOK_DATA.forEach(s=>{ _infoMap[s.sku]=s; });
+function mergeInfoMap(list){ list.forEach(s=>{ _infoMap[s.sku]=s; }); }
+mergeInfoMap(STOK_DATA);
+
+// SKU yang punya stok fisik tapi tidak terjual di periode data, agar tetap muncul di Rekomendasi
+function stokDataWithUnsold(){
+  const sold=new Set(STOK_DATA.map(s=>s.sku));
+  const extra=[...new Set([...Object.keys(STOK_TOKO),...Object.keys(STOK_GUDANG)])]
+    .filter(sku=>!sold.has(sku)&&((STOK_TOKO[sku]||0)+(STOK_GUDANG[sku]||0))>0)
+    .map(sku=>{
+      const info=_infoMap[sku]||{};
+      return {sku,produk:info.produk||sku,varian:info.varian||'',kategori:info.kategori||'Lainnya',
+        divisi:info.divisi||'',harga_unit:info.harga_unit||0,hpp_unit:info.hpp_unit||0,
+        total_qty:0,months_active:0,avg_per_bulan:0,recent3_avg:0,trend:'tidak_terjual',trend_pct:0,
+        is_seasonal:false,peak_month:'',rek_qty:0,last_sold:info.last_sold||'',monthly:[]};
+    })
+    .sort((a,b)=>((STOK_TOKO[b.sku]||0)+(STOK_GUDANG[b.sku]||0))-((STOK_TOKO[a.sku]||0)+(STOK_GUDANG[a.sku]||0)));
+  return STOK_DATA.concat(extra);
+}
 
 function isInvExcluded(sku){ return localStorage.getItem('inv_excl_'+sku)==='1'; }
 function getExcludedSkus(){
@@ -1168,6 +1190,7 @@ function filterMasalah(){
 function trendBadge(t,pct){
   if(t==='naik')return`<span class="badge-green">📈 Naik</span>`;
   if(t==='turun')return`<span class="badge-red">📉 Turun</span>`;
+  if(t==='tidak_terjual')return`<span style="background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:700;white-space:nowrap">Tidak terjual</span>`;
   return`<span class="badge-yellow">➡️ Stabil</span>`;
 }
 function rekBadge(qty){
@@ -1332,7 +1355,7 @@ function renderStok(data){
   });
   tb.innerHTML=stokRows.join('');
 }
-renderStok(STOK_DATA);
+renderStok(stokDataWithUnsold());
 updateTotalBudget();
 
 function filterStok(){
@@ -1340,7 +1363,7 @@ function filterStok(){
   const kat=document.getElementById('stokKatFilter').value;
   const trend=document.getElementById('stokTrendFilter').value;
   const beli=document.getElementById('stokBeliFilter').value;
-  let d=STOK_DATA.filter(s=>{
+  let d=stokDataWithUnsold().filter(s=>{
     if(q&&!s.produk.toLowerCase().includes(q)&&!s.sku.toLowerCase().includes(q)&&!s.varian.toLowerCase().includes(q))return false;
     if(kat&&s.kategori!==kat)return false;
     if(trend==='musiman'){if(!s.is_seasonal)return false;}
