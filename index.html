@@ -886,6 +886,9 @@ const COLORS = ['#034543','#1a8b88','#2eb8b4','#c2a000','#ea580c','#7c3aed','#dc
 // walau CDN gagal load (Chart.defaults akan throw, menghentikan eksekusi)
 let STOK_TOKO   = JSON.parse(localStorage.getItem('stok_toko')||'{}');
 let STOK_GUDANG = JSON.parse(localStorage.getItem('stok_gudang')||'{}');
+// Info master produk dari file stok Olsera: sku -> [nama, varian, kategori, harga beli, harga jual]
+let STOK_INFO = {};
+try{ STOK_INFO = JSON.parse(localStorage.getItem('stok_info')||'{}'); }catch(e){}
 
 if(typeof Chart!=='undefined'){
   Chart.defaults.font.family="'Inter',-apple-system,BlinkMacSystemFont,sans-serif";
@@ -919,6 +922,15 @@ function mBar(m,max=100){
 // tapi SKU yang tidak terjual di data baru tetap punya nama dari data sebelumnya.
 const _infoMap={};
 function mergeInfoMap(list){ list.forEach(s=>{ _infoMap[s.sku]=s; }); }
+
+// Nama/kategori utamakan data penjualan; HPP & harga jual utamakan harga master di file stok.
+function skuInfo(sku){
+  const sale=_infoMap[sku]||{}, st=STOK_INFO[sku]||[];
+  const [nm,vr,kt,hb,hj]=st;
+  return {produk:sale.produk||nm||sku, varian:sale.varian||vr||'', kategori:sale.kategori||kt||'Lainnya',
+    divisi:sale.divisi||'', hpp_unit:hb>0?hb:(sale.hpp_unit||0), harga_unit:hj>0?hj:(sale.harga_unit||0),
+    last_sold:sale.last_sold||''};
+}
 mergeInfoMap(STOK_DATA);
 
 // SKU yang punya stok fisik tapi tidak terjual di periode data, agar tetap muncul di Rekomendasi
@@ -927,7 +939,7 @@ function stokDataWithUnsold(){
   const extra=[...new Set([...Object.keys(STOK_TOKO),...Object.keys(STOK_GUDANG)])]
     .filter(sku=>!sold.has(sku)&&((STOK_TOKO[sku]||0)+(STOK_GUDANG[sku]||0))>0)
     .map(sku=>{
-      const info=_infoMap[sku]||{};
+      const info=skuInfo(sku);
       return {sku,produk:info.produk||sku,varian:info.varian||'',kategori:info.kategori||'Lainnya',
         divisi:info.divisi||'',harga_unit:info.harga_unit||0,hpp_unit:info.hpp_unit||0,
         total_qty:0,months_active:0,avg_per_bulan:0,recent3_avg:0,trend:'tidak_terjual',trend_pct:0,
@@ -1012,7 +1024,7 @@ function filterInventori(){
   const kat=document.getElementById('invKatFilter').value;
   const src=document.getElementById('invSrcFilter').value;
   const items=allSkus.map(sku=>{
-    const info=_infoMap[sku]||{produk:sku,varian:'',kategori:'Lainnya',hpp_unit:0,harga_unit:0};
+    const info=skuInfo(sku);
     const qToko=STOK_TOKO[sku]||0, qGudang=STOK_GUDANG[sku]||0;
     const qTotal=qToko+qGudang;
     const hpp=info.hpp_unit||0, harga=info.harga_unit||0;
@@ -1201,14 +1213,22 @@ function rekBadge(qty){
 function uploadStokFisik(files, jenis){
   if(!files||!files.length) return;
   const doUpload=()=>{
-    const map={};
+    const map={}, info={}, badFiles=[];
     let loaded=0;
     const total=files.length;
     const tryFinish=()=>{
       loaded++;
       if(loaded<total) return;
       const n=Object.keys(map).length;
-      const lbl='✓ '+(jenis==='toko'?'Toko':'Gudang')+': '+n+' SKU'+(total>1?' ('+total+' file)':'');
+      const nama=jenis==='toko'?'Toko':'Gudang';
+      if(!n){
+        const msg='⚠️ '+nama+': kolom "sku" dan "stock_qty" tidak ditemukan. Pakai file export produk dari Olsera.';
+        [jenis==='toko'?'stokTokoLabel':'stokGudangLabel',jenis==='toko'?'invTokoLabel':'invGudangLabel'].forEach(id=>{const el=document.getElementById(id); if(el) el.textContent=msg;});
+        return;
+      }
+      Object.assign(STOK_INFO,info);
+      try{ localStorage.setItem('stok_info',JSON.stringify(STOK_INFO)); }catch(e){ console.warn('stok_info tidak tersimpan:',e); }
+      const lbl='✓ '+nama+': '+n+' SKU'+(total>1?' ('+total+' file)':'')+(badFiles.length?' · ⚠️ '+badFiles.length+' file dilewati (format beda)':'');
       if(jenis==='toko'){
         STOK_TOKO=map;
         localStorage.setItem('stok_toko',JSON.stringify(map));
@@ -1229,6 +1249,7 @@ function uploadStokFisik(files, jenis){
           upd[jenis+'_updated_at']=firebase.firestore.FieldValue.serverTimestamp();
           if(_currentUserName) upd[jenis+'_updated_by']=_currentUserName;
           await _app.firestore().collection('settings').doc('stok_fisik').set(upd,{merge:true});
+          if(Object.keys(info).length) await _app.firestore().collection('settings').doc('stok_info').set({info:STOK_INFO,updated_at:firebase.firestore.FieldValue.serverTimestamp()});
         }catch(e){
           console.error('Gagal simpan stok ke Firestore:',e);
           ['stokTokoLabel','invTokoLabel','stokGudangLabel','invGudangLabel'].forEach(id=>{const el=document.getElementById(id); if(el&&id.toLowerCase().includes(jenis)) el.textContent+=' · ⚠️ gagal sinkron cloud';});
@@ -1245,11 +1266,18 @@ function uploadStokFisik(files, jenis){
         const hdr=rows[0].map(h=>String(h||'').toLowerCase().trim());
         const iSku=hdr.indexOf('sku');
         const iQty=hdr.indexOf('stock_qty');
-        if(iSku<0||iQty<0){ tryFinish(); return; }
+        if(iSku<0||iQty<0){ badFiles.push(file.name); tryFinish(); return; }
+        const iNm=hdr.indexOf('name'), iVr=hdr.indexOf('variant_names'), iKt=hdr.indexOf('category');
+        const iBuy=hdr.indexOf('buy_price'), iPos=hdr.indexOf('pos_sell_price'), iSell=hdr.indexOf('sell_price');
         for(let i=1;i<rows.length;i++){
-          const sku=String(rows[i][iSku]||'').trim();
-          const qty=Number(rows[i][iQty])||0;
-          if(sku) map[sku]=(map[sku]||0)+qty;
+          const r=rows[i];
+          const sku=String(r[iSku]||'').trim();
+          if(!sku) continue;
+          map[sku]=(map[sku]||0)+(Number(r[iQty])||0);
+          const g=j=>j>=0&&r[j]!=null?r[j]:'';
+          const nm=String(g(iNm)).trim();
+          if(nm) info[sku]=[nm,String(g(iVr)).trim(),String(g(iKt)).trim().toUpperCase(),
+            Number(g(iBuy))||0,Number(g(iPos))||Number(g(iSell))||0];
         }
         tryFinish();
       };
@@ -1318,8 +1346,9 @@ function renderStok(data){
     const stGudang=STOK_GUDANG[s.sku]||0;
     const stTotal=stToko+stGudang;
     const perlBeli=Math.max(0,s.rek_qty-stTotal);
-    const hpp=s.hpp_unit||0;
-    const harga=s.harga_unit||0;
+    const inf=skuInfo(s.sku);
+    const hpp=inf.hpp_unit||0;
+    const harga=inf.harga_unit||0;
     const finalVal=savedFinal?Number(savedFinal):0;
     const qty4calc=finalVal>0?finalVal:perlBeli;
     const estBudget=qty4calc*hpp;
@@ -1414,8 +1443,9 @@ function stokTableData(){
     const stGudang=STOK_GUDANG[s.sku]||0;
     const stTotal=stToko+stGudang;
     const perlBeli=Math.max(0,s.rek_qty-stTotal);
-    const hpp=s.hpp_unit||0;
-    const harga=s.harga_unit||0;
+    const inf=skuInfo(s.sku);
+    const hpp=inf.hpp_unit||0;
+    const harga=inf.harga_unit||0;
     const qty4c=finalNum>0?finalNum:perlBeli;
     const modal=qty4c*hpp, jual=qty4c*harga, profit=jual-modal;
     const margin=jual>0?(profit/jual*100):0;
@@ -1512,12 +1542,17 @@ function _setUpdateBadge(d){
   if(st) st.textContent='☁️ Sinkron data...';
   _fbReady.then(async()=>{
     const db=_app.firestore();
-    const [stokR,exclR,pjR]=await Promise.allSettled([
+    const [stokR,exclR,pjR,infoR]=await Promise.allSettled([
       db.collection('settings').doc('stok_fisik').get(),
       db.collection('settings').doc('inv_excluded').get(),
-      db.collection('penjualan').get()
+      db.collection('penjualan').get(),
+      db.collection('settings').doc('stok_info').get()
     ]);
-    const errs=[stokR,exclR,pjR].filter(r=>r.status==='rejected').map(r=>r.reason);
+    if(infoR.status==='fulfilled'&&infoR.value.exists){
+      const inf=infoR.value.data().info;
+      if(inf&&Object.keys(inf).length){ STOK_INFO=inf; try{ localStorage.setItem('stok_info',JSON.stringify(inf)); }catch(e){} }
+    }
+    const errs=[stokR,exclR,pjR,infoR].filter(r=>r.status==='rejected').map(r=>r.reason);
     errs.forEach(e=>console.error('Gagal muat dari Firestore:',e));
 
     if(stokR.status==='fulfilled'&&stokR.value.exists){
