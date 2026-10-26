@@ -1501,8 +1501,10 @@ function downloadStokXLSX(){
   }catch(e){ console.error('Gagal muat data penjualan tersimpan:',e); }
 })();
 
-// ── Sinkron cloud: login anonim otomatis (tanpa layar login) ──
-// Nama app terpisah dari Portal agar sesi login Portal tidak tertimpa.
+// ── Sinkron cloud: memakai sesi login Portal Harmoni ──
+// Nama app 'harmoni-auth' sama dengan Portal (domain yang sama), jadi user yang
+// sudah login di Portal langsung dikenali. Role diambil dari users/{uid}.apps.harmoni_analitik.
+let _isStaffView = new URLSearchParams(location.search).get('mode')==='staff';
 function _fmtTs(ts){
   const d=ts&&ts.toDate?ts.toDate():ts instanceof Date?ts:null;
   if(!d) return '';
@@ -1511,33 +1513,53 @@ function _fmtTs(ts){
 function _setUpdateBadge(d){
   const b=document.querySelector('.header .badge');
   if(!b||!d) return;
-  const staff=new URLSearchParams(location.search).get('mode')==='staff';
-  b.textContent=(staff?'Staff · ':'')+'Update: '+_fmtTs(d);
+  b.textContent=(_isStaffView?'Staff · ':'')+'Update: '+_fmtTs(d);
 }
 (function(){
   const st=document.getElementById('globalUploadStatus');
   if(typeof firebase==='undefined'){ if(st) st.textContent='⚠️ Cloud tidak terjangkau — pakai data di perangkat ini'; return; }
   try{
-    _app=firebase.apps.find(a=>a.name==='harmoni-analitik')||firebase.initializeApp({
+    _app=firebase.apps.find(a=>a.name==='harmoni-auth')||firebase.initializeApp({
       apiKey:'AIzaSyA9V5Lw40pDeAWeQKijYCkdvnag8AlEe74',
       authDomain:'harmoni-indonesia.firebaseapp.com',
       projectId:'harmoni-indonesia',
       storageBucket:'harmoni-indonesia.firebasestorage.app',
       messagingSenderId:'825719884876',
       appId:'1:825719884876:web:a8fd78d382e0f98cf6b8e9'
-    },'harmoni-analitik');
+    },'harmoni-auth');
   }catch(e){ console.error('Init Firebase gagal:',e); _app=null; return; }
 
   const login=new Promise((resolve,reject)=>{
-    const auth=_app.auth();
-    const unsub=auth.onAuthStateChanged(u=>{
-      if(u){ unsub(); resolve(u); return; }
-      auth.signInAnonymously().catch(e=>{ unsub(); reject(e); });
+    const unsub=_app.auth().onAuthStateChanged(u=>{
+      unsub();
+      if(u) resolve(u);
+      else reject({code:'portal/belum-login'});
     });
   });
+  const akses=login.then(async u=>{
+    const snap=await _app.firestore().collection('users').doc(u.uid).get();
+    const p=snap.exists?snap.data():null;
+    const isOwner=p&&p.role==='owner';
+    const app=(p&&p.apps&&p.apps.harmoni_analitik)||{};
+    if(!p||!p.aktif||(!isOwner&&!app.akses)) throw {code:'portal/tanpa-akses'};
+    _currentUserName=p.nama||'';
+    if(!isOwner&&app.role!=='admin'&&!_isStaffView){
+      _isStaffView=true;
+      document.querySelector('.header .badge').textContent='Staff';
+      applyRole('operator');
+    }
+    return u;
+  });
   const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),15000));
-  _fbReady=Promise.race([login,timeout]);
-  _fbReady.catch(()=>{});
+  _fbReady=Promise.race([akses,timeout]);
+  _fbReady.catch(e=>{
+    // Tanpa login Portal / tanpa akses: tetap bisa lihat data lokal, tapi tampilan staff
+    if((e.code==='portal/belum-login'||e.code==='portal/tanpa-akses')&&!_isStaffView){
+      _isStaffView=true;
+      document.querySelector('.header .badge').textContent='Staff';
+      applyRole('operator');
+    }
+  });
 
   if(st) st.textContent='☁️ Sinkron data...';
   _fbReady.then(async()=>{
@@ -1605,7 +1627,10 @@ function _setUpdateBadge(d){
     if(st) st.textContent=msg;
   }).catch(e=>{
     console.error('Login cloud gagal:',e);
-    if(st) st.textContent='⚠️ Cloud tidak terjangkau ('+(e.code||e.message)+') — pakai data di perangkat ini';
+    if(!st) return;
+    if(e.code==='portal/belum-login') st.textContent='🔒 Login dulu di Portal Harmoni untuk sinkron data cloud — sementara pakai data di perangkat ini';
+    else if(e.code==='portal/tanpa-akses') st.textContent='🔒 Akun ini belum punya akses Analitik di Portal — pakai data di perangkat ini';
+    else st.textContent='⚠️ Cloud tidak terjangkau ('+(e.code||e.message)+') — pakai data di perangkat ini';
   });
 })();
 
