@@ -91,6 +91,11 @@
   .pbtn:hover{border-color:var(--g);background:rgba(3,69,67,.06)}
   .pbtn.active{background:var(--g);color:white;border-color:var(--g)}
   .period-badge{font-size:.7rem;background:rgba(3,69,67,.1);color:var(--g);padding:2px 10px;border-radius:20px;font-weight:700;white-space:nowrap}
+
+/* iPad & HP: kolom kiri tabel besar tidak "menempel" — ribuan sel menempel menghabiskan memori layar sentuh (force close) */
+@media (hover:none),(pointer:coarse){
+  #tbInv td,#tbStok td{position:static!important}
+}
 </style>
 </head>
 <body>
@@ -299,6 +304,7 @@
         <option value="toko">Hanya Toko</option>
         <option value="gudang">Hanya Gudang</option>
       </select>
+      <button onclick="downloadInvXLSX()" style="padding:7px 14px;background:#166534;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer">⬇ Excel</button>
     </div>
     <div id="invCount" style="font-size:.8rem;color:#64748b;margin-bottom:8px"></div>
     <div id="invEmpty" style="text-align:center;padding:40px;color:#94a3b8;display:none">
@@ -1013,7 +1019,9 @@ function gambarJikaAktif(){
   if(aktif==='tab-inventori'){ filterInventori(); _perluGambar.inventori=false; } else _perluGambar.inventori=true;
 }
 
+let currentInvItems=[];
 function renderInventori(items){
+  currentInvItems=items||[];
   const tbody=document.getElementById('tbInv');
   const wrap=document.getElementById('invTableWrap');
   const empty=document.getElementById('invEmpty');
@@ -1524,6 +1532,42 @@ function downloadStokXLSX(){
     ws['!cols']=[{wch:4},{wch:18},{wch:30},{wch:20},{wch:22},{wch:12},{wch:10},{wch:16},{wch:8},{wch:8},{wch:10},{wch:16},{wch:12}];
     XLSX.utils.book_append_sheet(wb,ws,'Rekomendasi Stok');
     XLSX.writeFile(wb,'Rekomendasi_Stok_Harmoni.xlsx');
+  };
+  if(typeof XLSX!=='undefined'){ doExport(); return; }
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+  s.onload=doExport;
+  document.head.appendChild(s);
+}
+
+// Excel Inventori: semua produk sesuai filter (cari, kategori, toko/gudang) + ringkasan per kategori
+function downloadInvXLSX(){
+  const doExport=()=>{
+    const items=currentInvItems.length?currentInvItems:[];
+    if(!items.length){ alert('Tidak ada produk sesuai filter'); return; }
+    const kat=document.getElementById('invKatFilter').value;
+    const AKT='_("Rp"* #,##0_);_("Rp"* (#,##0);_("Rp"* "-"_);_(@_)';
+    const headers=['No','SKU','Produk','Varian','Kategori','Stok Toko','Modal Toko','Stok Gudang','Modal Gudang','Total Stok','Total Modal','Nilai Jual','Potensi Untung','HPP/pcs','Harga Jual/pcs','Status'];
+    const rows=items.map((it,i)=>[i+1,it.sku,it.produk,it.varian,it.kategori,it.qToko,it.modalToko,it.qGudang,it.modalGudang,it.qTotal,it.modalTotal,it.jualTotal,it.untung,it.hpp,it.harga,isInvExcluded(it.sku)?'Excluded':'Disertakan']);
+    const aktif=items.filter(it=>!isInvExcluded(it.sku));
+    const sum=k=>aktif.reduce((s,it)=>s+(it[k]||0),0);
+    rows.push([],['','','','TOTAL (disertakan)','',sum('qToko'),sum('modalToko'),sum('qGudang'),sum('modalGudang'),sum('qTotal'),sum('modalTotal'),sum('jualTotal'),sum('untung'),'','','']);
+    const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
+    const rp=[6,8,10,11,12,13,14];
+    for(let R=1;R<=rows.length;R++) rp.forEach(C=>{ const c=ws[XLSX.utils.encode_cell({r:R,c:C})]; if(c&&c.t==='n') c.z=AKT; });
+    ws['!cols']=[{wch:5},{wch:14},{wch:34},{wch:16},{wch:22},{wch:10},{wch:16},{wch:11},{wch:16},{wch:10},{wch:16},{wch:16},{wch:16},{wch:13},{wch:14},{wch:11}];
+    // Ringkasan per kategori
+    const km={};
+    aktif.forEach(it=>{ const k=km[it.kategori]=km[it.kategori]||{n:0,q:0,m:0,j:0}; k.n++; k.q+=it.qTotal; k.m+=it.modalTotal; k.j+=it.jualTotal; });
+    const kh=['Kategori','Jumlah Produk','Total Stok','Total Modal','Nilai Jual','Potensi Untung'];
+    const kr=Object.entries(km).sort((a,b)=>b[1].m-a[1].m).map(([k,d])=>[k,d.n,d.q,d.m,d.j,d.j-d.m]);
+    const ws2=XLSX.utils.aoa_to_sheet([kh,...kr]);
+    for(let R=1;R<=kr.length;R++) [3,4,5].forEach(C=>{ const c=ws2[XLSX.utils.encode_cell({r:R,c:C})]; if(c&&c.t==='n') c.z=AKT; });
+    ws2['!cols']=[{wch:28},{wch:14},{wch:12},{wch:18},{wch:18},{wch:18}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Inventori');
+    XLSX.utils.book_append_sheet(wb,ws2,'Per Kategori');
+    XLSX.writeFile(wb,'Inventori_Stok'+(kat?'_'+kat.replace(/[^A-Za-z0-9]+/g,'_'):'')+'.xlsx');
   };
   if(typeof XLSX!=='undefined'){ doExport(); return; }
   const s=document.createElement('script');
