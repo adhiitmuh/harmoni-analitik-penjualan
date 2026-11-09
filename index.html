@@ -103,10 +103,10 @@
 <div class="header">
   <div>
     <div class="header-logo"><img src="img/logo-beige.png" alt="harmoni" style="height:22px;vertical-align:middle;margin-right:8px"><span>· Analitik Stok dan Penjualan</span></div>
-    <div class="sub">Jan-25 – Feb-26 &nbsp;·&nbsp; 13 Bulan Data Aktual</div>
+    <div class="sub" id="headerSub">Memuat data…</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-    <div class="badge">Update: 15 Jun 2026 00:13</div>
+    <div class="badge">Memuat…</div>
   </div>
 </div>
 
@@ -144,12 +144,12 @@
 <!-- DASHBOARD -->
 <div id="tab-dashboard" class="tab-content active">
   <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-icon">💰</div><div class="kpi-label" id="kpi-omzet-label">Total Omzet (13 Bln)</div><div class="kpi-value" id="kpi-omzet">Rp —</div><div class="kpi-sub" id="kpi-omzet-sub">Jan-25 – Feb-26</div></div>
-    <div class="kpi-card"><div class="kpi-icon">📈</div><div class="kpi-label">Total Profit</div><div class="kpi-value" id="kpi-profit">Rp —</div><div class="kpi-sub" id="kpi-margin-sub">Margin rata-rata: —%</div></div>
-    <div class="kpi-card"><div class="kpi-icon">📅</div><div class="kpi-label" id="kpi-avg-label">Rata-rata/Bulan</div><div class="kpi-value" id="kpi-avg">Rp —</div><div class="kpi-sub" id="kpi-avg-sub">dari 13 bulan</div></div>
-    <div class="kpi-card"><div class="kpi-icon">🏆</div><div class="kpi-label">Bulan Terkuat</div><div class="kpi-value" id="kpi-best-month">Agt-25</div><div class="kpi-sub" id="kpi-best-omzet">Rp — omzet</div></div>
-    <div class="kpi-card"><div class="kpi-icon">📊</div><div class="kpi-label" id="kpi-yh-label">Young Harmonis</div><div class="kpi-value" id="kpi-yh">Rp —</div><div class="kpi-sub" id="kpi-yh-sub">—% dari total</div></div>
-    <div class="kpi-card"><div class="kpi-icon">⚠️</div><div class="kpi-label">SKU Margin Negatif</div><div class="kpi-value">26 SKU</div><div class="kpi-sub">Total kerugian: Rp —</div></div>
+    <div class="kpi-card"><div class="kpi-icon">💰</div><div class="kpi-label" id="kpi-omzet-label">Total Omzet</div><div class="kpi-value" id="kpi-omzet">—</div><div class="kpi-sub" id="kpi-omzet-sub"></div></div>
+    <div class="kpi-card"><div class="kpi-icon">📈</div><div class="kpi-label">Total Profit</div><div class="kpi-value" id="kpi-profit">—</div><div class="kpi-sub" id="kpi-margin-sub"></div></div>
+    <div class="kpi-card"><div class="kpi-icon">📅</div><div class="kpi-label" id="kpi-avg-label">Rata-rata/Bulan</div><div class="kpi-value" id="kpi-avg">—</div><div class="kpi-sub" id="kpi-avg-sub"></div></div>
+    <div class="kpi-card"><div class="kpi-icon">🏆</div><div class="kpi-label">Bulan Terkuat</div><div class="kpi-value" id="kpi-best-month">—</div><div class="kpi-sub" id="kpi-best-omzet"></div></div>
+    <div class="kpi-card"><div class="kpi-icon">📊</div><div class="kpi-label" id="kpi-yh-label">Young Harmonis</div><div class="kpi-value" id="kpi-yh">—</div><div class="kpi-sub" id="kpi-yh-sub"></div></div>
+    <div class="kpi-card"><div class="kpi-icon">⚠️</div><div class="kpi-label">SKU Margin Negatif</div><div class="kpi-value" id="kpi-mas">—</div><div class="kpi-sub" id="kpi-mas-sub"></div></div>
   </div>
   <div class="chart-grid-3">
     <div class="card"><div class="card-title">📈 Tren Omzet Bulanan</div><div style="position:relative;height:280px"><canvas id="cTren"></canvas></div></div>
@@ -161,12 +161,7 @@
   </div>
   <div class="insight-box">
     <strong>📌 Insight Kunci</strong>
-    <ul>
-      <li>Agt-25 adalah bulan tertinggi — Rp — omzet (puncak musim sekolah/PASKIBRA).</li>
-      <li>Young Harmonis menyumbang <strong>—%</strong> omzet total, Custom Orders —%.</li>
-      <li>Custom Orders memiliki margin <strong>100%</strong> (tidak ada HPP tercatat).</li>
-      <li>26 SKU dijual di bawah HPP — total kerugian Rp —.</li>
-    </ul>
+    <ul id="insightKunci"></ul>
   </div>
 </div>
 
@@ -190,11 +185,11 @@
       <tbody id="tbKat"></tbody>
       <tfoot><tr style="font-weight:700;background:#f8fafc">
         <td colspan="3" style="padding:10px 12px">GRAND TOTAL</td>
-        <td class="tr" id="gtOmzet" style="padding:10px 12px">Rp —</td>
-        <td class="tr" id="gtHpp" style="padding:10px 12px">Rp —</td>
-        <td class="tr" id="gtProfit" style="padding:10px 12px">Rp —</td>
-        <td style="padding:10px 12px"><span class="badge-green" id="gtMargin">—%</span></td>
-        <td class="tr" id="gtMarkup" style="padding:10px 12px">—%</td>
+        <td class="tr" id="gtOmzet" style="padding:10px 12px">—</td>
+        <td class="tr" id="gtHpp" style="padding:10px 12px">—</td>
+        <td class="tr" id="gtProfit" style="padding:10px 12px">—</td>
+        <td style="padding:10px 12px"><span class="badge-green" id="gtMargin">—</span></td>
+        <td class="tr" id="gtMarkup" style="padding:10px 12px">—</td>
       </tr></tfoot>
     </table></div>
   </div>
@@ -205,13 +200,13 @@
   <div class="divisi-stat">
     <div class="div-block div-yh">
       <div class="div-label">🔵 Young Harmonis</div>
-      <div class="div-val">Rp —</div>
-      <div class="div-sub">—% dari total omzet · Profit Rp — · Margin —%</div>
+      <div class="div-val" id="divYhVal">—</div>
+      <div class="div-sub" id="divYhSub"></div>
     </div>
     <div class="div-block div-cust">
       <div class="div-label">🟢 Custom Orders</div>
-      <div class="div-val">Rp —</div>
-      <div class="div-sub">—% dari total omzet · Profit Rp — · Margin 100%</div>
+      <div class="div-val" id="divCuVal">—</div>
+      <div class="div-sub" id="divCuSub"></div>
     </div>
   </div>
   <div class="card card-full"><div class="card-title">📈 Tren Bulanan — YH vs Custom</div><div style="position:relative;height:280px"><canvas id="cDivisiLine"></canvas></div></div>
@@ -257,14 +252,11 @@
 <div id="tab-masalah" class="tab-content">
   <div class="insight-box" style="background:#fff7ed;border-color:#ea580c;color:#9a3412">
     <strong>⚠️ Ringkasan Masalah</strong>
-    <ul>
-      <li>26 SKU dengan profit <strong>negatif</strong> — dijual di bawah HPP. Total kerugian: <strong>Rp —</strong></li>
-      <li>Perlu evaluasi harga jual, pengecekan HPP, atau pertimbangan discontinue produk.</li>
-    </ul>
+    <ul id="masInsight"></ul>
   </div>
   <div class="card card-full">
     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-      <span>🔴 SKU dengan Profit Negatif (26 SKU)</span>
+      <span id="masJudul">🔴 SKU dengan Profit Negatif</span>
       <div class="filter-row" style="margin:0">
         <select id="masFilter" onchange="filterMasalah()">
           <option value="">Semua Kategori</option>
@@ -511,22 +503,25 @@
 
 <script>
 // var (bukan let) agar aman diakses dari fungsi mana pun walau init Firebase gagal
+var _peranAnalitik = null; // 'admin' (Owner/Admin) | 'operator'
 var _app = null, _fbReady = Promise.reject(new Error('cloud tidak tersedia')), _currentUserName = '';
 _fbReady.catch(()=>{});
-let BULAN = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
+// Data penjualan TIDAK ditanam di halaman (halaman ini publik di GitHub Pages);
+// dimuat dari Firestore setelah login sesuai role: Owner/Admin = data lengkap, Operator = ringkasan stok.
+let BULAN = [];
 let TOTAL_BULANAN         = [];
 let TOTAL_PROFIT_BULANAN  = [];
 let TOTAL_HPP_BULANAN     = [];
 let YH_OMZET   = [];
 let YH_PROFIT  = [];
-let YH_MARGIN  = [42.41, 41.4, 27.38, 43.08, 41.19, 41.34, 38.4, 40.21, 42.44, 40.07, 38.44, 38.7, 40.26];
+let YH_MARGIN  = [];
 let CUST_OMZET = [];
-let KONTR_YH   = [60.39, 62.72, 52.48, 68.34, 73.78, 70.73, 84.6, 63.01, 71.97, 74.53, 70.84, 71.73, 48.85];
-let KAT_NAMES          = ["CUSTOM", "PERLENGKAPAN PNS", "PERLENGKAPAN SEKOLAH", "SERAGAM KARNAVAL", "PERLENGKAPAN PASKIBRA", "PERLENGKAPAN SECURITY", "PERLENGKAPAN PRAMUKA", "AKSESORIS", "PERLENGKAPAN POLRI", "PERLENGKAPAN TNI", "PERLENGKAPAN POL PP", "SEPATU PDH & PDL", "PERLENGKAPAN PELAYARAN", "PERL. TNI", "PERL. PERBAKIN"];
+let KONTR_YH   = [];
+let KAT_NAMES          = [];
 let KAT_MONTHLY        = [];
 let KAT_MONTHLY_PROFIT = [];
 let KAT_MONTHLY_HPP    = [];
-let KAT_DIVISI         = ["Custom Orders", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis", "Young Harmonis"];
+let KAT_DIVISI         = [];
 let RINGKASAN   = [];
 let DIVISI_DATA = [];
 let TOP_PRODUK  = [];
@@ -653,6 +648,11 @@ function finishUpload(rawRows,nFiles,st,errors=[]){
         batch.set(ref,{rows,updated_at:firebase.firestore.FieldValue.serverTimestamp(),updated_by:_currentUserName||''});
       });
       await batch.commit();
+      // Ringkasan Operator dari SEMUA bulan di cloud (bukan hanya file yang baru diupload)
+      try{
+        const semua=[]; (await db.collection('penjualan').get()).forEach(d=>{ const r=d.data().rows; if(r&&r.length) semua.push(...r); });
+        if(semua.length){ rebuildAllData(semua); try{ localStorage.setItem('olsera_rawrows',JSON.stringify(semua)); }catch(e){} await simpanRingkasOperator(null); }
+      }catch(e){ console.error('Gagal membuat ringkasan operator:',e); }
       st.textContent=okMsg+' · ☁️ tersinkron ke semua perangkat';
       _setUpdateBadge(new Date());
     }catch(e){
@@ -729,30 +729,11 @@ function rebuildAllData(rawRows){
   TOP_PRODUK=Object.values(prodAgg).map(p=>{const o=p.monthly_omzet.reduce((s,v)=>s+v,0),q=p.monthly_qty.reduce((s,v)=>s+v,0),pr=p.monthly_profit.reduce((s,v)=>s+v,0); return {...p,omzet:o,qty:q,profit:pr,margin:o>0?pr/o*100:0};}).filter(p=>p.omzet>0).sort((a,b)=>b.omzet-a.omzet).map((p,i)=>{p.rank=i+1;return p;});
   MASALAH_SKU=Object.values(skuBulanAgg).filter(m=>m.omzet>0&&m.profit<0).sort((a,b)=>a.profit-b.profit).map((m,i)=>{const mg=m.profit/m.omzet*100; return {...m,no:i+1,margin:mg,status:m.hpp>m.omzet?'HPP > Omzet':'Profit Negatif',rek:m.hpp>m.omzet?'Cek harga jual / diskon':'Perlu investigasi HPP'};});
 
-  // Stok rekomendasi
-  const stok=[];
-  Object.keys(skuMonthly).forEach(sku=>{
-    const q=skuMonthly[sku], inf=skuMeta[sku];
-    const tot=q.reduce((s,v)=>s+v,0), act=q.filter(v=>v>0).length;
-    const prev3=q.slice(Math.max(0,N-6),Math.max(0,N-3)).reduce((s,v)=>s+v,0);
-    const rec3=q.slice(Math.max(0,N-3)).reduce((s,v)=>s+v,0);
-    const r3avg=+(rec3/3).toFixed(1);
-    const tpct=prev3>0?(rec3-prev3)/prev3*100:rec3>0?100:0;
-    const trend=tpct>20?'naik':tpct<-20?'turun':'stabil';
-    // Seasonality detection
-    const calQty={};
-    allBulan.forEach((b,bi)=>{const mn=MONTH_NUM_JS[b.split('-')[0]]||0;if(!calQty[mn])calQty[mn]=[];calQty[mn].push(q[bi]);});
-    const calAvg={};Object.keys(calQty).forEach(mn=>{calQty[mn].forEach(v=>{calAvg[mn]=(calAvg[mn]||0)+v/calQty[mn].length;});});
-    const peakMn=Object.keys(calAvg).reduce((a,b)=>calAvg[a]>calAvg[b]?a:b,Object.keys(calAvg)[0]||'0');
-    const peakAvg=calAvg[peakMn]||0;
-    const overallAvg=tot/Math.max(N,1);
-    const isSeasonal=peakAvg/Math.max(overallAvg,0.001)>=2.5&&tot>=10&&act>=3;
-    const peakMonthName=MONTH_ID_JS[parseInt(peakMn)]||'';
-    const rek=isSeasonal?Math.max(1,Math.round(peakAvg*1.2)):Math.max(1,Math.round(r3avg*(trend==='naik'?1.3:trend==='turun'?0.9:1.1)));
-    const last=[...allBulan].reverse().find(b=>skuMonthly[sku][bidx[b]]>0)||'';
-    stok.push({sku,produk:inf.produk,varian:inf.varian,kategori:inf.kategori,divisi:inf.divisi,harga_unit:inf.harga_unit,hpp_unit:inf.hpp_unit,total_qty:tot,months_active:act,avg_per_bulan:+(tot/Math.max(act,1)).toFixed(1),recent3_avg:r3avg,trend,trend_pct:+tpct.toFixed(1),is_seasonal:isSeasonal,peak_month:peakMonthName,rek_qty:rek,last_sold:last,monthly:[...q]});
-  });
-  STOK_DATA=stok.sort((a,b)=>b.total_qty-a.total_qty);
+  STOK_DATA=hitungStok(allBulan,skuMonthly,skuMeta);
+  // Ringkasan untuk Operator: hanya qty per SKU per bulan + info SKU + daftar SKU bermasalah (tanpa total omzet/profit)
+  _ringkasOperator={bulan:allBulan,sku:Object.keys(skuMonthly).map(k=>({s:k,m:skuMeta[k],q:skuMonthly[k]})),masalah:MASALAH_SKU};
+  isiTeksStatis();
+
   mergeInfoMap(STOK_DATA);
 
   // Reset period filter dan re-render
@@ -776,6 +757,80 @@ function rebuildAllData(rawRows){
   renderMas(MASALAH_SKU);
 }
 
+
+let _ringkasOperator=null;
+function hitungStok(allBulan,skuMonthly,skuMeta){
+  const N=allBulan.length, bidx=Object.fromEntries(allBulan.map((b,i)=>[b,i]));
+  const stok=[];
+  Object.keys(skuMonthly).forEach(sku=>{
+    const q=skuMonthly[sku], inf=skuMeta[sku];
+    const tot=q.reduce((s,v)=>s+v,0), act=q.filter(v=>v>0).length;
+    const prev3=q.slice(Math.max(0,N-6),Math.max(0,N-3)).reduce((s,v)=>s+v,0);
+    const rec3=q.slice(Math.max(0,N-3)).reduce((s,v)=>s+v,0);
+    const r3avg=+(rec3/3).toFixed(1);
+    const tpct=prev3>0?(rec3-prev3)/prev3*100:rec3>0?100:0;
+    const trend=tpct>20?'naik':tpct<-20?'turun':'stabil';
+    // Seasonality detection
+    const calQty={};
+    allBulan.forEach((b,bi)=>{const mn=MONTH_NUM_JS[b.split('-')[0]]||0;if(!calQty[mn])calQty[mn]=[];calQty[mn].push(q[bi]);});
+    const calAvg={};Object.keys(calQty).forEach(mn=>{calQty[mn].forEach(v=>{calAvg[mn]=(calAvg[mn]||0)+v/calQty[mn].length;});});
+    const peakMn=Object.keys(calAvg).reduce((a,b)=>calAvg[a]>calAvg[b]?a:b,Object.keys(calAvg)[0]||'0');
+    const peakAvg=calAvg[peakMn]||0;
+    const overallAvg=tot/Math.max(N,1);
+    const isSeasonal=peakAvg/Math.max(overallAvg,0.001)>=2.5&&tot>=10&&act>=3;
+    const peakMonthName=MONTH_ID_JS[parseInt(peakMn)]||'';
+    const rek=isSeasonal?Math.max(1,Math.round(peakAvg*1.2)):Math.max(1,Math.round(r3avg*(trend==='naik'?1.3:trend==='turun'?0.9:1.1)));
+    const last=[...allBulan].reverse().find(b=>skuMonthly[sku][bidx[b]]>0)||'';
+    stok.push({sku,produk:inf.produk,varian:inf.varian,kategori:inf.kategori,divisi:inf.divisi,harga_unit:inf.harga_unit,hpp_unit:inf.hpp_unit,total_qty:tot,months_active:act,avg_per_bulan:+(tot/Math.max(act,1)).toFixed(1),recent3_avg:r3avg,trend,trend_pct:+tpct.toFixed(1),is_seasonal:isSeasonal,peak_month:peakMonthName,rek_qty:rek,last_sold:last,monthly:[...q]});
+  });
+  return stok.sort((a,b)=>b.total_qty-a.total_qty);
+}
+// Teks ringkasan (dulu ditulis tetap di HTML) — dihitung dari data yang dimuat
+function isiTeksStatis(){
+  const set=(id,t)=>{const el=document.getElementById(id); if(el) el.textContent=t;};
+  const N=BULAN.length;
+  set('headerSub',N?(BULAN[0]+' – '+BULAN[N-1]+' · '+N+' Bulan Data Aktual'):'Belum ada data');
+  const rugi=MASALAH_SKU.reduce((t,m)=>t+m.profit,0);
+  set('kpi-mas',MASALAH_SKU.length+' SKU'); set('kpi-mas-sub','Total kerugian: '+fmtMjs(Math.abs(rugi)));
+  set('masJudul','🔴 SKU dengan Profit Negatif ('+MASALAH_SKU.length+' SKU)');
+  const mi=document.getElementById('masInsight');
+  if(mi) mi.innerHTML=MASALAH_SKU.length?`<li>${MASALAH_SKU.length} SKU dengan profit <strong>negatif</strong> — dijual di bawah HPP. Total kerugian: <strong>${fmtMjs(Math.abs(rugi))}</strong></li><li>Perlu evaluasi harga jual, pengecekan HPP, atau pertimbangan discontinue produk.</li>`:'<li>Tidak ada SKU dengan profit negatif.</li>';
+  if(!TOTAL_BULANAN.length) return;  // Operator: tidak punya data omzet
+  const tot=TOTAL_BULANAN.reduce((a,b)=>a+b,0), yh=YH_OMZET.reduce((a,b)=>a+b,0), cu=CUST_OMZET.reduce((a,b)=>a+b,0);
+  const yhp=YH_PROFIT.reduce((a,b)=>a+b,0), cup=DIVISI_DATA.reduce((a,d)=>a+(d.cust_profit||0),0);
+  const pct=v=>tot>0?(v/tot*100).toFixed(1)+'%':'0%';
+  set('divYhVal',fmtMjs(yh)); set('divYhSub',pct(yh)+' dari total omzet · Profit '+fmtMjs(yhp)+' · Margin '+(yh>0?(yhp/yh*100).toFixed(1):0)+'%');
+  set('divCuVal',fmtMjs(cu)); set('divCuSub',pct(cu)+' dari total omzet · Profit '+fmtMjs(cup)+' · Margin '+(cu>0?(cup/cu*100).toFixed(1):0)+'%');
+  const bi=TOTAL_BULANAN.reduce((b,v,i)=>v>TOTAL_BULANAN[b]?i:b,0);
+  const ik=document.getElementById('insightKunci');
+  if(ik) ik.innerHTML=`<li>${BULAN[bi]} adalah bulan tertinggi — ${fmtMjs(TOTAL_BULANAN[bi])} omzet.</li><li>Young Harmonis menyumbang <strong>${pct(yh)}</strong> omzet total, Custom Orders ${pct(cu)}.</li><li>${MASALAH_SKU.length} SKU dijual di bawah HPP — total kerugian ${fmtMjs(Math.abs(rugi))}.</li>`;
+}
+// Operator: bangun tab Masalah, Inventori & Rekomendasi dari ringkasan (tanpa data omzet/profit total)
+function bangunOperator(r){
+  const skuMonthly={}, skuMeta={};
+  (r.sku||[]).forEach(x=>{ skuMonthly[x.s]=x.q; skuMeta[x.s]=x.m; });
+  BULAN=[...(r.bulan||[])]; MASALAH_SKU=r.masalah||[];
+  STOK_DATA=hitungStok(BULAN,skuMonthly,skuMeta);
+  mergeInfoMap(STOK_DATA);
+  FILTERED_IDX=BULAN.map((_,i)=>i);
+  isiTeksStatis();
+  renderMas(MASALAH_SKU);
+  try{ gambarJikaAktif(); }catch(e){ console.error(e); }
+}
+// Owner/Admin: simpan ringkasan untuk Operator (dipecah supaya muat batas 1 MB per dokumen)
+async function simpanRingkasOperator(sig){
+  if(!_app||!_ringkasOperator||_peranAnalitik!=='admin') return;
+  const db=_app.firestore(), col=db.collection('penjualan_operator');
+  try{
+    const meta=await col.doc('meta').get();
+    if(sig&&meta.exists&&meta.data().sig===sig) return;
+    const teks=JSON.stringify(_ringkasOperator), UK=700000, n=Math.ceil(teks.length/UK)||1;
+    const batch=db.batch();
+    for(let i=0;i<n;i++) batch.set(col.doc('part_'+i),{i,data:teks.slice(i*UK,(i+1)*UK)});
+    batch.set(col.doc('meta'),{n,sig:sig||String(Date.now()),updated_at:firebase.firestore.FieldValue.serverTimestamp(),updated_by:_currentUserName||''});
+    await batch.commit();
+  }catch(e){ console.error('Gagal simpan ringkasan operator:',e); }
+}
 // ── Period filter state ───────────────────────────────────────────────────────
 let FILTERED_IDX = BULAN.map((_,i)=>i);  // default: all months
 
@@ -1576,8 +1631,8 @@ function downloadInvXLSX(){
   document.head.appendChild(s);
 }
 
-// ── Auto-muat data penjualan tersimpan ──
-(function(){
+// ── Muat data penjualan tersimpan di perangkat — hanya untuk Owner/Admin (dipanggil setelah login) ──
+function muatLokal(){
   try{
     const saved=localStorage.getItem('olsera_rawrows');
     if(!saved) return;
@@ -1588,7 +1643,7 @@ function downloadInvXLSX(){
     const st=document.getElementById('uploadStatus');
     if(st) st.textContent='✅ Data tersimpan · '+nBulan+' bulan · '+rawRows.length+' transaksi';
   }catch(e){ console.error('Gagal muat data penjualan tersimpan:',e); }
-})();
+}
 
 // ── Sinkron cloud: memakai sesi login Portal Harmoni ──
 // Nama app 'harmoni-auth' sama dengan Portal (domain yang sama), jadi user yang
@@ -1637,6 +1692,8 @@ function _setUpdateBadge(d){
       const url=new URL(location.href); url.searchParams.delete('mode');
       location.replace(url.toString()); return new Promise(()=>{});
     }
+    _peranAnalitik=(isOwner||app.role==='admin')?'admin':'operator';
+    if(_peranAnalitik==='admin') muatLokal();
     if(isOwner||app.role==='admin'){
       const b=document.querySelector('.header .badge'); if(b&&/^Staff/.test(b.textContent)) b.textContent=isOwner?'Owner':'Admin';
     }
@@ -1664,7 +1721,7 @@ function _setUpdateBadge(d){
     const [stokR,exclR,pjR,infoR]=await Promise.allSettled([
       db.collection('settings').doc('stok_fisik').get(),
       db.collection('settings').doc('inv_excluded').get(),
-      db.collection('penjualan').get(),
+      _peranAnalitik==='admin'?db.collection('penjualan').get():db.collection('penjualan_operator').get(),
       db.collection('settings').doc('stok_info').get()
     ]);
     if(infoR.status==='fulfilled'&&infoR.value.exists){
@@ -1700,7 +1757,17 @@ function _setUpdateBadge(d){
     }
 
     let msg='☁️ Tersinkron';
-    if(pjR.status==='fulfilled'&&!pjR.value.empty){
+    if(_peranAnalitik!=='admin'){
+      // Operator: rakit ringkasan dari potongan dokumen
+      if(pjR.status==='fulfilled'&&!pjR.value.empty){
+        const parts=[]; let meta=null;
+        pjR.value.forEach(doc=>{ const d=doc.data(); if(doc.id==='meta') meta=d; else if(typeof d.i==='number') parts[d.i]=d.data; });
+        try{
+          if(meta&&parts.length>=meta.n){ bangunOperator(JSON.parse(parts.slice(0,meta.n).join(''))); _setUpdateBadge(meta.updated_at&&meta.updated_at.toDate?meta.updated_at.toDate():null); msg='☁️ Data stok · '+BULAN.length+' bulan'; }
+        }catch(e){ console.error('Ringkasan rusak:',e); }
+      } else msg='☁️ Belum ada ringkasan — minta Owner/Admin membuka Analitik sekali';
+    }
+    else if(pjR.status==='fulfilled'&&!pjR.value.empty){
       const allRows=[]; let latest=null;
       pjR.value.forEach(doc=>{
         const d=doc.data();
@@ -1717,6 +1784,7 @@ function _setUpdateBadge(d){
           rebuildAllData(allRows);
         }
         document.getElementById('periodLabel').textContent='Semua '+BULAN.length+' Bulan';
+        simpanRingkasOperator(sig);
         const nBulan=[...new Set(allRows.map(r=>r.bulan))].length;
         msg='☁️ Data cloud · '+nBulan+' bulan · '+allRows.length+' transaksi';
         const up=document.getElementById('uploadStatus');
@@ -1725,6 +1793,7 @@ function _setUpdateBadge(d){
       }
     }
     try{ gambarJikaAktif(); }catch(e){ console.error(e); }
+    { const bd=document.querySelector('.header .badge'); if(bd&&bd.textContent==='Memuat…') bd.textContent=_peranAnalitik==='admin'?'Admin':'Staff'; }
     if(errs.length) msg='⚠️ Sebagian data cloud gagal dimuat ('+(errs[0].code||errs[0].message)+')';
     if(st) st.textContent=msg;
   }).catch(e=>{
@@ -1759,6 +1828,9 @@ function applyRole(role) {
   // sembunyikan period bar (hanya relevan untuk tab analitik)
   const pb = document.querySelector('.period-bar');
   if (pb) pb.style.display = 'none';
+  // Upload data penjualan hanya Owner/Admin; buang salinan data lengkap yang mungkin tersimpan di perangkat
+  ['globalOlseraInput','olseraInput'].forEach(id=>{ const el=document.getElementById(id); if(el&&el.parentElement) el.parentElement.style.display='none'; });
+  try{ localStorage.removeItem('olsera_rawrows'); localStorage.removeItem('olsera_cloud_sig'); }catch(e){}
   // sembunyikan tombol download (export hanya untuk admin)
   ['btn-dl-csv','btn-dl-xlsx'].forEach(id => {
     const el = document.getElementById(id);
