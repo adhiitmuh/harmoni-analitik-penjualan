@@ -150,7 +150,7 @@
     <div class="kpi-card"><div class="kpi-icon">📈</div><div class="kpi-label">Total Profit</div><div class="kpi-value" id="kpi-profit">—</div><div class="kpi-sub" id="kpi-margin-sub"></div></div>
     <div class="kpi-card"><div class="kpi-icon">📅</div><div class="kpi-label" id="kpi-avg-label">Rata-rata/Bulan</div><div class="kpi-value" id="kpi-avg">—</div><div class="kpi-sub" id="kpi-avg-sub"></div></div>
     <div class="kpi-card"><div class="kpi-icon">🏆</div><div class="kpi-label">Bulan Terkuat</div><div class="kpi-value" id="kpi-best-month">—</div><div class="kpi-sub" id="kpi-best-omzet"></div></div>
-    <div class="kpi-card"><div class="kpi-icon">📊</div><div class="kpi-label" id="kpi-yh-label">Young Harmonis</div><div class="kpi-value" id="kpi-yh">—</div><div class="kpi-sub" id="kpi-yh-sub"></div></div>
+    <div class="kpi-card"><div class="kpi-icon">📊</div><div class="kpi-label" id="kpi-yh-label">Harmoni Indonesia HQ</div><div class="kpi-value" id="kpi-yh">—</div><div class="kpi-sub" id="kpi-yh-sub"></div></div>
     <div class="kpi-card"><div class="kpi-icon">⚠️</div><div class="kpi-label">SKU Margin Negatif</div><div class="kpi-value" id="kpi-mas">—</div><div class="kpi-sub" id="kpi-mas-sub"></div></div>
   </div>
   <div class="chart-grid-3">
@@ -158,7 +158,7 @@
     <div class="card"><div class="card-title">🍩 Distribusi Omzet Per Kategori</div><div style="position:relative;height:360px"><canvas id="cDonut"></canvas></div></div>
   </div>
   <div class="chart-grid">
-    <div class="card"><div class="card-title">💼 Young Harmonis vs Custom Orders</div><div style="position:relative;height:240px"><canvas id="cDivisiBar"></canvas></div></div>
+    <div class="card"><div class="card-title">💼 Harmoni Indonesia HQ vs Custom Orders</div><div style="position:relative;height:240px"><canvas id="cDivisiBar"></canvas></div></div>
     <div class="card"><div class="card-title">📊 Omzet Per Kategori Utama</div><div style="position:relative;height:420px"><canvas id="cKatBar"></canvas></div></div>
   </div>
   <div class="insight-box">
@@ -201,7 +201,7 @@
 <div id="tab-divisi" class="tab-content">
   <div class="divisi-stat">
     <div class="div-block div-yh">
-      <div class="div-label">🔵 Young Harmonis</div>
+      <div class="div-label">🔵 Harmoni Indonesia HQ</div>
       <div class="div-val" id="divYhVal">—</div>
       <div class="div-sub" id="divYhSub"></div>
     </div>
@@ -211,11 +211,11 @@
       <div class="div-sub" id="divCuSub"></div>
     </div>
   </div>
-  <div class="card card-full"><div class="card-title">📈 Tren Bulanan — YH vs Custom</div><div style="position:relative;height:280px"><canvas id="cDivisiLine"></canvas></div></div>
+  <div class="card card-full"><div class="card-title">📈 Tren Bulanan — HQ vs Custom</div><div style="position:relative;height:280px"><canvas id="cDivisiLine"></canvas></div></div>
   <div class="card card-full">
     <div class="card-title">📋 Detail Per Bulan</div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Bulan</th><th class="tr">YH Omzet</th><th class="tr">YH Profit</th><th>YH Margin</th><th class="tr">Custom Omzet</th><th class="tr">Custom Profit</th><th class="tr">Kontr. YH</th><th class="tr">Kontr. Custom</th></tr></thead>
+      <thead><tr><th>Bulan</th><th class="tr">HQ Omzet</th><th class="tr">HQ Profit</th><th>HQ Margin</th><th class="tr">Custom Omzet</th><th class="tr">Custom Profit</th><th class="tr">Kontr. YH</th><th class="tr">Kontr. Custom</th></tr></thead>
       <tbody id="tbDiv"></tbody>
     </table></div>
   </div>
@@ -569,6 +569,9 @@ let MASALAH_SKU = [];
 let currentStokData = [];
 let STOK_DATA   = [];
 const BULAN_ORDER = ["Jan-25", "Feb-25", "Mar-25", "Apr-25", "Mei-25", "Jun-25", "Agt-25", "Sep-25", "Okt-25", "Nov-25", "Des-25", "Jan-26", "Feb-26"];
+// Nama tampilan divisi; data di cloud tetap memakai kunci 'Young Harmonis'
+const NAMA_HQ='Harmoni Indonesia HQ';
+const namaDiv=d=>d==='Young Harmonis'?NAMA_HQ:d;
 const DIVISI_MAP  = {"AKSESORIS": "Young Harmonis", "CUSTOM": "Custom Orders", "PERL. PERBAKIN": "Young Harmonis", "PERL. TNI": "Young Harmonis", "PERLENGKAPAN PASKIBRA": "Young Harmonis", "PERLENGKAPAN PELAYARAN": "Young Harmonis", "PERLENGKAPAN PNS": "Young Harmonis", "PERLENGKAPAN POL PP": "Young Harmonis", "PERLENGKAPAN POLRI": "Young Harmonis", "PERLENGKAPAN PRAMUKA": "Young Harmonis", "PERLENGKAPAN SECURITY": "Young Harmonis", "PERLENGKAPAN SEKOLAH": "Young Harmonis", "PERLENGKAPAN TNI": "Young Harmonis", "SEPATU PDH & PDL": "Young Harmonis", "SERAGAM KARNAVAL": "Young Harmonis"};
 
 // ── Olsera Upload ─────────────────────────────────────────────────────────────
@@ -884,7 +887,7 @@ function isiTeksStatis(){
   set('divCuVal',fmtMjs(cu)); set('divCuSub',pct(cu)+' dari total omzet · Profit '+fmtMjs(cup)+' · Margin '+(cu>0?(cup/cu*100).toFixed(1):0)+'%');
   const bi=TOTAL_BULANAN.reduce((b,v,i)=>v>TOTAL_BULANAN[b]?i:b,0);
   const ik=document.getElementById('insightKunci');
-  if(ik) ik.innerHTML=`<li>${BULAN[bi]} adalah bulan tertinggi — ${fmtMjs(TOTAL_BULANAN[bi])} omzet.</li><li>Young Harmonis menyumbang <strong>${pct(yh)}</strong> omzet total, Custom Orders ${pct(cu)}.</li><li>${MASALAH_SKU.length} SKU dijual di bawah HPP — total kerugian ${fmtMjs(Math.abs(rugi))}.</li>`;
+  if(ik) ik.innerHTML=`<li>${BULAN[bi]} adalah bulan tertinggi — ${fmtMjs(TOTAL_BULANAN[bi])} omzet.</li><li>Harmoni Indonesia HQ menyumbang <strong>${pct(yh)}</strong> omzet total, Custom Orders ${pct(cu)}.</li><li>${MASALAH_SKU.length} SKU dijual di bawah HPP — total kerugian ${fmtMjs(Math.abs(rugi))}.</li>`;
 }
 // Operator: bangun tab Masalah, Inventori & Rekomendasi dari ringkasan (tanpa data omzet/profit total)
 function bangunOperator(r){
@@ -936,7 +939,7 @@ function pilihYoy(k,v,btn){ _yoy[k]=v; document.querySelectorAll('.yoy-'+k).forE
 function isiPilihanBagianYoy(){
   const sel=document.getElementById('yoyBagian'); if(!sel) return;
   const lama=sel.value;
-  sel.innerHTML='<option value="semua">Semua penjualan</option><option value="div:yh">Young Harmonis</option><option value="div:cu">Custom Orders</option>'+
+  sel.innerHTML='<option value="semua">Semua penjualan</option><option value="div:yh">Harmoni Indonesia HQ</option><option value="div:cu">Custom Orders</option>'+
     KAT_NAMES.map((k,i)=>`<option value="kat:${i}">Kategori: ${k}</option>`).join('');
   if([...sel.options].some(o=>o.value===lama)) sel.value=lama;
 }
@@ -1398,9 +1401,9 @@ function showTab(id,btn){
 // Charts (named for period filter updates)
 const cTren = new Chart(document.getElementById('cTren'),{type:'line',data:{labels:BULAN,datasets:[{label:'Total Omzet',data:TOTAL_BULANAN,borderColor:'#034543',backgroundColor:'rgba(3,69,67,.08)',fill:true,tension:.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{y:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}}});
 const cDonut = new Chart(document.getElementById('cDonut'),{type:'doughnut',data:{labels:RINGKASAN.map(r=>r.nama.replace('PERLENGKAPAN ','').replace('SERAGAM ','')),datasets:[{data:RINGKASAN.map(r=>r.omzet),backgroundColor:RINGKASAN.map((_,i)=>COLORS[i%COLORS.length]),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:9},padding:8}},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},cutout:'60%'}});
-const cDivisiBar = new Chart(document.getElementById('cDivisiBar'),{type:'bar',data:{labels:BULAN,datasets:[{label:'Young Harmonis',data:YH_OMZET,backgroundColor:'rgba(3,69,67,.85)',borderRadius:4},{label:'Custom Orders',data:CUST_OMZET,backgroundColor:'rgba(194,160,0,.8)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}}}}});
+const cDivisiBar = new Chart(document.getElementById('cDivisiBar'),{type:'bar',data:{labels:BULAN,datasets:[{label:NAMA_HQ,data:YH_OMZET,backgroundColor:'rgba(3,69,67,.85)',borderRadius:4},{label:'Custom Orders',data:CUST_OMZET,backgroundColor:'rgba(194,160,0,.8)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}}}}});
 const cKatBar = new Chart(document.getElementById('cKatBar'),{plugins:[ChartDataLabels],type:'bar',data:{labels:RINGKASAN.map(r=>r.nama.length>22?r.nama.slice(0,22)+'…':r.nama),datasets:[{label:'Omzet',data:RINGKASAN.map(r=>r.omzet),backgroundColor:RINGKASAN.map((_,i)=>COLORS[i%COLORS.length]),borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}},datalabels:{anchor:'end',align:'end',formatter:v=>fmtM(v),font:{size:10,weight:'600'},color:'#334155',clip:false}},layout:{padding:{right:90}},scales:{x:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
-const cDivisiLine = new Chart(document.getElementById('cDivisiLine'),{type:'line',data:{labels:BULAN,datasets:[{label:'Young Harmonis',data:YH_OMZET,borderColor:'#034543',backgroundColor:'rgba(3,69,67,.08)',fill:true,tension:.4,pointRadius:4},{label:'Custom Orders',data:CUST_OMZET,borderColor:'#c2a000',backgroundColor:'rgba(194,160,0,.07)',fill:true,tension:.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{y:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}}});
+const cDivisiLine = new Chart(document.getElementById('cDivisiLine'),{type:'line',data:{labels:BULAN,datasets:[{label:NAMA_HQ,data:YH_OMZET,borderColor:'#034543',backgroundColor:'rgba(3,69,67,.08)',fill:true,tension:.4,pointRadius:4},{label:'Custom Orders',data:CUST_OMZET,borderColor:'#c2a000',backgroundColor:'rgba(194,160,0,.07)',fill:true,tension:.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{y:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}}});
 
 let cTopOmzet = new Chart(document.getElementById('cTopOmzet'),{type:'bar',data:{labels:[],datasets:[{label:'Omzet',data:[],backgroundColor:'#034543',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
 let cTopMargin = new Chart(document.getElementById('cTopMargin'),{type:'bar',data:{labels:[],datasets:[{label:'Margin%',data:[],backgroundColor:'#1a8b88',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.raw.toFixed(1)+'%'}}},scales:{x:{ticks:{callback:v=>v+'%'},max:110,grid:{color:'#f1f5f9'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
@@ -1437,7 +1440,7 @@ function renderRingkasan(fKatOmzet, fKatProfit, fKatHpp){
     const markup=hpp>0?profit/hpp*100:null;
     return {no:i+1,nama:nm,omzet,hpp:hpp||null,profit,margin,markup,divisi:KAT_DIVISI[i]};
   }).filter(r=>r.omzet>0).sort((a,b)=>b.omzet-a.omzet).map((r,i)=>{r.no=i+1;return r;});
-  tb.innerHTML = rows.map(r=>`<tr><td class="tc">${r.no}</td><td><strong>${r.nama}</strong></td><td><span class="badge-blue">${r.divisi||'—'}</span></td><td class="tr">${fmtRp(r.omzet)}</td><td class="tr">${r.hpp?fmtRp(r.hpp):'—'}</td><td class="tr">${fmtRp(r.profit)}</td><td>${mBar(r.margin)}</td><td class="tr">${r.markup?pct(r.markup):'—'}</td></tr>`).join('');
+  tb.innerHTML = rows.map(r=>`<tr><td class="tc">${r.no}</td><td><strong>${r.nama}</strong></td><td><span class="badge-blue">${namaDiv(r.divisi)||'—'}</span></td><td class="tr">${fmtRp(r.omzet)}</td><td class="tr">${r.hpp?fmtRp(r.hpp):'—'}</td><td class="tr">${fmtRp(r.profit)}</td><td>${mBar(r.margin)}</td><td class="tr">${r.markup?pct(r.markup):'—'}</td></tr>`).join('');
 
   const gtOmzet=fKatOmzet.reduce((s,v)=>s+v,0), gtProfit=fKatProfit.reduce((s,v)=>s+v,0), gtHpp=fKatHpp.reduce((s,v)=>s+v,0);
   const gtMargin=gtOmzet>0?gtProfit/gtOmzet*100:0, gtMarkup=gtHpp>0?gtProfit/gtHpp*100:0;
