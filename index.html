@@ -77,6 +77,7 @@
   .filter-row{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
   .filter-row select,.filter-row input{padding:6px 11px;border:1px solid rgba(3,69,67,.2);border-radius:7px;font-size:.8rem;background:white;color:var(--black);cursor:pointer;font-family:'Inter',sans-serif;outline:none}
   .filter-row select:focus{border-color:var(--g)}
+  .yoy-tabel td,.yoy-tabel th{white-space:nowrap}
   .bRek{background:linear-gradient(135deg,var(--beige),var(--beige2));color:var(--g);padding:3px 10px;border-radius:6px;font-weight:800;font-size:.8rem;border:1px solid rgba(3,69,67,.15)}
   .gen-info{text-align:right;font-size:.7rem;color:#94a3b8;padding:6px 24px 16px}
   .sc-hide{display:none!important}
@@ -115,6 +116,7 @@
   <button id="nav-kategori" class="nav-btn" onclick="showTab('kategori',this)">📂 Per Kategori</button>
   <button id="nav-divisi" class="nav-btn" onclick="showTab('divisi',this)">🏢 Analisis Divisi</button>
   <button id="nav-produk" class="nav-btn" onclick="showTab('produk',this)">🏆 Top Produk</button>
+  <button id="nav-tahun" class="nav-btn" onclick="showTab('tahun',this)">📅 Perbandingan Tahun</button>
   <button id="nav-masalah" class="nav-btn" onclick="showTab('masalah',this)">🚨 Analisis Masalah</button>
   <button id="nav-inventori" class="nav-btn" onclick="showTab('inventori',this)">🏪 Inventori Stok</button>
   <button id="nav-stok" class="nav-btn" onclick="showTab('stok',this)">📦 Rekomendasi</button>
@@ -245,6 +247,37 @@
       <thead><tr><th>No</th><th>Produk</th><th>Varian</th><th>Kategori</th><th class="tr">Total Omzet</th><th class="tr">Total Qty</th><th class="tr">Total Profit</th><th>Margin</th></tr></thead>
       <tbody id="tbTop"></tbody>
     </table></div>
+  </div>
+</div>
+
+<!-- PERBANDINGAN TAHUN KE TAHUN -->
+<div id="tab-tahun" class="tab-content">
+  <div class="card card-full" style="margin-bottom:18px">
+    <div class="card-title"><span>📅 Perbandingan Tahun ke Tahun</span><span style="font-size:.72rem;font-weight:500;color:#64748b">memakai semua data (tidak ikut pilihan periode di atas)</span></div>
+    <div class="filter-row" style="gap:6px">
+      <span style="font-size:.75rem;font-weight:600;color:#64748b">Bandingkan:</span>
+      <button class="pbtn yoy-p active" data-p="bulan" onclick="pilihYoy('p','bulan',this)">Per Bulan</button>
+      <button class="pbtn yoy-p" data-p="kuartal" onclick="pilihYoy('p','kuartal',this)">Per 3 Bulan</button>
+      <button class="pbtn yoy-p" data-p="semester" onclick="pilihYoy('p','semester',this)">Per 6 Bulan</button>
+      <button class="pbtn yoy-p" data-p="tahun" onclick="pilihYoy('p','tahun',this)">Per Tahun</button>
+    </div>
+    <div class="filter-row" style="gap:6px">
+      <span style="font-size:.75rem;font-weight:600;color:#64748b">Lihat:</span>
+      <button class="pbtn yoy-u active" data-u="omzet" onclick="pilihYoy('u','omzet',this)">Omzet</button>
+      <button class="pbtn yoy-u" data-u="profit" onclick="pilihYoy('u','profit',this)">Profit</button>
+      <button class="pbtn yoy-u" data-u="margin" onclick="pilihYoy('u','margin',this)">Margin %</button>
+      <select id="yoyBagian" onchange="renderYoy()" style="margin-left:6px"><option value="semua">Semua penjualan</option></select>
+    </div>
+    <div id="yoyInsight" class="insight-box" style="margin:6px 0 14px"></div>
+    <div style="position:relative;height:320px"><canvas id="cYoy"></canvas></div>
+  </div>
+  <div class="card card-full">
+    <div class="card-title"><span id="yoyJudulTabel">Rincian</span></div>
+    <div class="table-wrap"><table class="yoy-tabel">
+      <thead id="yoyHead"></thead>
+      <tbody id="yoyBody"></tbody>
+    </table></div>
+    <p style="font-size:.72rem;color:#64748b;margin-top:10px"><span style="color:#d97706">*</span> data periode itu belum lengkap (ada bulan yang belum diupload). Kolom <b>Selisih</b> hanya membandingkan bulan yang ada datanya di kedua tahun, supaya adil. Baris <b>"periode sama"</b> = dari Januari sampai bulan terakhir yang ada datanya.</p>
   </div>
 </div>
 
@@ -831,6 +864,84 @@ async function simpanRingkasOperator(sig){
     await batch.commit();
   }catch(e){ console.error('Gagal simpan ringkasan operator:',e); }
 }
+
+// ── Perbandingan Tahun ke Tahun (Owner/Admin) ────────────────────────────────
+let _yoy={p:'bulan',u:'omzet'}, cYoy=null;
+const NAMA_BLN=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+function pilihYoy(k,v,btn){ _yoy[k]=v; document.querySelectorAll('.yoy-'+k).forEach(b=>b.classList.toggle('active',b===btn)); renderYoy(); }
+function isiPilihanBagianYoy(){
+  const sel=document.getElementById('yoyBagian'); if(!sel) return;
+  const lama=sel.value;
+  sel.innerHTML='<option value="semua">Semua penjualan</option><option value="div:yh">Young Harmonis</option><option value="div:cu">Custom Orders</option>'+
+    KAT_NAMES.map((k,i)=>`<option value="kat:${i}">Kategori: ${k}</option>`).join('');
+  if([...sel.options].some(o=>o.value===lama)) sel.value=lama;
+}
+// Omzet & profit per bulan untuk bagian yang dipilih → { 'tahun-bulan': {o,p} }
+function seriYoy(bagian){
+  const out={};
+  BULAN.forEach((b,i)=>{
+    const [mn,yy]=b.split('-'); const m=MONTH_NUM_JS[mn]; if(!m) return;
+    let o=0,p=0;
+    if(bagian==='semua'){ o=TOTAL_BULANAN[i]||0; p=TOTAL_PROFIT_BULANAN[i]||0; }
+    else if(bagian==='div:yh'){ o=YH_OMZET[i]||0; p=YH_PROFIT[i]||0; }
+    else if(bagian==='div:cu'){ o=CUST_OMZET[i]||0; p=(DIVISI_DATA[i]||{}).cust_profit||0; }
+    else if(bagian.startsWith('kat:')){ const k=+bagian.slice(4); o=(KAT_MONTHLY[k]||[])[i]||0; p=(KAT_MONTHLY_PROFIT[k]||[])[i]||0; }
+    out[(2000+parseInt(yy))+'-'+m]={o,p};
+  });
+  return out;
+}
+function kelompokYoy(p){
+  if(p==='bulan') return NAMA_BLN.slice(1).map((n,i)=>({label:n,bln:[i+1]}));
+  if(p==='kuartal') return [['Jan–Mar',[1,2,3]],['Apr–Jun',[4,5,6]],['Jul–Sep',[7,8,9]],['Okt–Des',[10,11,12]]].map(([label,bln],i)=>({label:'Q'+(i+1)+' ('+label+')',bln}));
+  if(p==='semester') return [{label:'Semester 1 (Jan–Jun)',bln:[1,2,3,4,5,6]},{label:'Semester 2 (Jul–Des)',bln:[7,8,9,10,11,12]}];
+  return [{label:'Setahun (Jan–Des)',bln:[1,2,3,4,5,6,7,8,9,10,11,12]}];
+}
+function renderYoy(){
+  const head=document.getElementById('yoyHead'), body=document.getElementById('yoyBody'), ins=document.getElementById('yoyInsight');
+  if(!head) return;
+  isiPilihanBagianYoy();
+  const bagian=document.getElementById('yoyBagian').value, seri=seriYoy(bagian);
+  const tahun=[...new Set(Object.keys(seri).map(k=>+k.split('-')[0]))].sort();
+  if(!tahun.length){ head.innerHTML=''; body.innerHTML='<tr><td style="padding:16px;color:#64748b">Belum ada data penjualan.</td></tr>'; ins.innerHTML=''; if(cYoy){cYoy.destroy();cYoy=null;} return; }
+  const u=_yoy.u, nilai=(o,p)=>u==='omzet'?o:u==='profit'?p:(o>0?p/o*100:null);
+  const fmt=v=>v===null||v===undefined?'—':u==='margin'?v.toFixed(1)+'%':fmtM(v);
+  const hitung=(th,blns)=>{ let o=0,p=0,n=0; blns.forEach(m=>{ const x=seri[th+'-'+m]; if(x){o+=x.o;p+=x.p;n++;} }); return {o,p,n,v:n?nilai(o,p):null,lengkap:n===blns.length}; };
+  const grup=kelompokYoy(_yoy.p);
+  // Bulan terakhir yang ada datanya → baris "periode sama" (year-to-date)
+  const thAkhir=tahun[tahun.length-1], blnAkhir=Math.max(...Object.keys(seri).filter(k=>+k.split('-')[0]===thAkhir).map(k=>+k.split('-')[1]));
+  const baris=grup.map(g=>({label:g.label,blns:g.bln}));
+  if(blnAkhir<12 && tahun.length>1) baris.push({label:'Jan–'+NAMA_BLN[blnAkhir]+' (periode sama)',blns:Array.from({length:blnAkhir},(_,i)=>i+1),ytd:true});
+  const thBanding=tahun.slice(-2); // selisih: tahun terakhir vs tahun sebelumnya
+  // Selisih hanya dari bulan yang ADA datanya di kedua tahun (supaya adil kalau ada bulan kosong)
+  const bandingAdil=(blns,t1,t0)=>{ const sama=blns.filter(m=>seri[t1+'-'+m]&&seri[t0+'-'+m]); return {a:hitung(t1,sama),b:hitung(t0,sama),n:sama.length,dari:blns.length}; };
+  const selisih=(blns)=>{ const {a,b,n,dari}=bandingAdil(blns,thBanding[1],thBanding[0]);
+    if(!n||a.v===null||b.v===null) return '<td class="tr">—</td><td class="tr">—</td>';
+    const catat=n<dari?` <span style="color:#d97706" title="dibandingkan ${n} bulan yang sama-sama ada datanya">*</span>`:'';
+    const d=a.v-b.v, warna=d>=0?'#059669':'#dc2626', tanda=d>=0?'+':'−';
+    const persen=u==='margin'?'':(b.v?(tanda+Math.abs(d/b.v*100).toFixed(1)+'%'):'baru');
+    return `<td class="tr" style="color:${warna};font-weight:700">${u==='margin'?tanda+Math.abs(d).toFixed(1)+' poin':tanda+fmtM(Math.abs(d))}${catat}</td><td class="tr" style="color:${warna};font-weight:700">${persen}</td>`; };
+  head.innerHTML=`<tr><th>Periode</th>${tahun.map(t=>`<th class="tr">${t}</th>`).join('')}${thBanding.length===2?`<th class="tr">Selisih ${thBanding[1]} vs ${thBanding[0]}</th><th class="tr">%</th>`:''}</tr>`;
+  body.innerHTML=baris.map(r=>{
+    const sel=tahun.map(t=>hitung(t,r.blns));
+    const cells=sel.map(x=>`<td class="tr"${x.n&&!x.lengkap?' title="'+x.n+' dari '+r.blns.length+' bulan"':''}>${fmt(x.v)}${x.n&&!x.lengkap?' <span style="color:#d97706">*</span>':''}</td>`).join('');
+    const sb=thBanding.length===2?selisih(r.blns):'';
+    return `<tr${r.ytd?' style="background:#f8fafc;font-weight:700"':''}><td>${r.label}</td>${cells}${sb}</tr>`;
+  }).join('');
+  document.getElementById('yoyJudulTabel').textContent='Rincian '+({omzet:'Omzet',profit:'Profit',margin:'Margin'}[u])+' — '+document.getElementById('yoyBagian').selectedOptions[0].textContent;
+  // Ringkasan singkat: periode sama tahun ini vs tahun lalu
+  if(tahun.length>1){
+    const {a,b,n,dari}=bandingAdil(Array.from({length:blnAkhir},(_,i)=>i+1),thAkhir,thAkhir-1);
+    if(n&&a.v!==null&&b.v!==null){
+      const d=a.v-b.v, naik=d>=0;
+      ins.innerHTML=`<strong>${naik?'📈':'📉'} Jan–${NAMA_BLN[blnAkhir]} ${thAkhir} vs Jan–${NAMA_BLN[blnAkhir]} ${thAkhir-1}</strong><ul><li>${({omzet:'Omzet',profit:'Profit',margin:'Margin'}[u])}: <b>${fmt(a.v)}</b> vs ${fmt(b.v)} → <b style="color:${naik?'#059669':'#dc2626'}">${naik?'naik':'turun'} ${u==='margin'?Math.abs(d).toFixed(1)+' poin':fmtM(Math.abs(d))+(b.v?' ('+Math.abs(d/b.v*100).toFixed(1)+'%)':'')}</b></li>${n===dari?'':'<li>'+(dari-n)+' bulan tidak ikut dibandingkan karena datanya belum ada di salah satu tahun.</li>'}</ul>`;
+    } else ins.innerHTML=`<strong>ℹ️</strong> Data ${thAkhir-1} untuk bulan yang sama belum ada, jadi belum bisa dibandingkan.`;
+  } else ins.innerHTML=`<strong>ℹ️</strong> Baru ada data tahun ${thAkhir}. Perbandingan muncul setelah ada data tahun lain.`;
+  // Grafik: satu warna per tahun
+  if(typeof Chart==='undefined') return;
+  const ds=tahun.map((t,i)=>({label:String(t),data:grup.map(g=>hitung(t,g.bln).v),backgroundColor:['#e2e8f0','#c2a000','#94a3b8','#1a8b88','#034543'][Math.max(0,5-tahun.length)+i],borderRadius:4}));
+  if(cYoy) cYoy.destroy();
+  cYoy=new Chart(document.getElementById('cYoy'),{type:'bar',data:{labels:grup.map(g=>g.label.replace(/ \(.*\)/,'')),datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.raw)}}},scales:{y:{ticks:{callback:v=>u==='margin'?v+'%':fmtM(v)},grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}}});
+}
 // ── Period filter state ───────────────────────────────────────────────────────
 let FILTERED_IDX = BULAN.map((_,i)=>i);  // default: all months
 
@@ -1072,6 +1183,7 @@ function gambarJikaAktif(){
   const aktif=(document.querySelector('.tab-content.active')||{}).id;
   if(aktif==='tab-stok'){ filterStok(); _perluGambar.stok=false; } else _perluGambar.stok=true;
   if(aktif==='tab-inventori'){ filterInventori(); _perluGambar.inventori=false; } else _perluGambar.inventori=true;
+  if(aktif==='tab-tahun'&&TOTAL_BULANAN.length) try{ renderYoy(); }catch(e){ console.error(e); }
 }
 
 let currentInvItems=[];
@@ -1205,6 +1317,7 @@ function showTab(id,btn){
   window.scrollTo(0,0);
   try{if(id==='inventori'&&_perluGambar.inventori){ filterInventori(); _perluGambar.inventori=false; }}catch(e){console.error('filterInventori:',e);}
   try{if(id==='stok'&&_perluGambar.stok){ filterStok(); _perluGambar.stok=false; }}catch(e){console.error('filterStok:',e);}
+  try{if(id==='tahun') renderYoy();}catch(e){console.error('renderYoy:',e);}
   if(id==='inventori'||id==='stok') setTimeout(adjustTableWrapHeight,0);
 }
 
@@ -1819,7 +1932,7 @@ function _setUpdateBadge(d){
 function applyRole(role) {
   if (role === 'admin') return;
   // operator: sembunyikan 4 tab analitik
-  ['dashboard','kategori','divisi','produk'].forEach(id => {
+  ['dashboard','kategori','divisi','produk','tahun'].forEach(id => {
     const btn = document.getElementById('nav-' + id);
     const tab = document.getElementById('tab-' + id);
     if (btn) btn.style.display = 'none';
