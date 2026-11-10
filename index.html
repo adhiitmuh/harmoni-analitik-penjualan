@@ -419,7 +419,7 @@
     <strong>📦 Cara Baca Rekomendasi Stok</strong>
     <ul>
       <li><strong>🗓 Musiman</strong> = penjualan terkonsentrasi di bulan tertentu (puncak ≥2.5× rata-rata) → rekomendasi pakai rata-rata bulan puncak + 20% buffer.</li>
-      <li><strong>Naik ↑</strong> = tumbuh &gt;20% vs 3 bulan sebelumnya → sediakan 30% lebih banyak dari rata-rata recent.</li>
+      <li><strong>Naik ↑</strong> = tumbuh &gt;20% vs <span class="lblRataN">3</span> bulan sebelumnya → sediakan 30% lebih banyak dari rata-rata <span class="lblRataN">3</span> bulan terakhir (pilih 3 / 6 / 12 bulan di kotak "Rata-rata").</li>
       <li><strong>Stabil →</strong> = perubahan ±20% → buffer 10% dari rata-rata recent.</li>
       <li><strong>Turun ↓</strong> = turun &gt;20% → kurangi 10% dari rata-rata recent.</li>
       <li>Filter per kategori, tren, atau cari produk di kotak pencarian.</li>
@@ -449,6 +449,9 @@
         <select id="stokKatFilter" onchange="filterStok()">
           <option value="">Semua Kategori</option>
           <option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN SEKOLAH</option><option>SERAGAM KARNAVAL</option><option>PERLENGKAPAN PASKIBRA</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN PRAMUKA</option><option>AKSESORIS</option><option>PERLENGKAPAN POLRI</option><option>PERLENGKAPAN TNI</option><option>PERLENGKAPAN POL PP</option><option>SEPATU PDH & PDL</option><option>PERLENGKAPAN PELAYARAN</option><option>PERL. TNI</option><option>PERL. PERBAKIN</option>
+        </select>
+        <select id="stokRataBulan" onchange="gantiRataBulan(this.value)" title="Rata-rata penjualan yang dipakai untuk tren & rekomendasi">
+          <option value="3">Rata-rata 3 bulan</option><option value="6">Rata-rata 6 bulan</option><option value="12">Rata-rata 12 bulan</option>
         </select>
         <select id="stokTrendFilter" onchange="filterStok()">
           <option value="">Semua Tren</option>
@@ -499,7 +502,7 @@
         <th style="position:sticky;left:288px;z-index:3;background:#034543;min-width:100px;border-right:2px solid #0a7874">Varian</th>
         <th class="sc-skat">Kategori</th>
         <th class="tr sc-savg">Avg/Bln</th>
-        <th class="tr sc-savg3">Avg 3Bln Terakhir</th><th class="sc-strnd">Tren</th><th class="sc-strndp">Tren %</th>
+        <th class="tr sc-savg3" id="thAvgN">Avg 3Bln Terakhir</th><th class="sc-strnd">Tren</th><th class="sc-strndp">Tren %</th>
         <th class="sc-stipe">Tipe</th>
         <th class="tr sc-sqty">Total Qty Terjual</th>
         <th class="tr sc-srek" style="background:#fef9c3;color:#854d0e">Rek. Stok</th>
@@ -843,15 +846,21 @@ function rebuildAllData(rawRows){
 
 
 let _ringkasOperator=null;
+// Rata-rata penjualan untuk rekomendasi: 3, 6 atau 12 bulan terakhir (dipilih di tab Rekomendasi)
+let RATA_BULAN=(()=>{ try{ const v=+localStorage.getItem('stok_rata_bulan'); return [3,6,12].includes(v)?v:3; }catch(e){ return 3; } })();
+let _argsStok=null;
 function hitungStok(allBulan,skuMonthly,skuMeta){
+  _argsStok=[allBulan,skuMonthly,skuMeta];
+  const W=RATA_BULAN;
   const N=allBulan.length, bidx=Object.fromEntries(allBulan.map((b,i)=>[b,i]));
   const stok=[];
   Object.keys(skuMonthly).forEach(sku=>{
     const q=skuMonthly[sku], inf=skuMeta[sku];
     const tot=q.reduce((s,v)=>s+v,0), act=q.filter(v=>v>0).length;
-    const prev3=q.slice(Math.max(0,N-6),Math.max(0,N-3)).reduce((s,v)=>s+v,0);
-    const rec3=q.slice(Math.max(0,N-3)).reduce((s,v)=>s+v,0);
-    const r3avg=+(rec3/3).toFixed(1);
+    // Tren: W bulan terakhir dibanding W bulan sebelumnya
+    const prev3=q.slice(Math.max(0,N-2*W),Math.max(0,N-W)).reduce((s,v)=>s+v,0);
+    const rec3=q.slice(Math.max(0,N-W)).reduce((s,v)=>s+v,0);
+    const r3avg=+(rec3/Math.min(W,Math.max(N,1))).toFixed(1);
     const tpct=prev3>0?(rec3-prev3)/prev3*100:rec3>0?100:0;
     const trend=tpct>20?'naik':tpct<-20?'turun':'stabil';
     // Seasonality detection
@@ -1685,6 +1694,20 @@ function renderStok(data){
   gambarBertahap(tb, document.getElementById('stokTableWrap'), data.length, rowFn, 30);
 }
 
+function gantiRataBulan(v){
+  RATA_BULAN=[3,6,12].includes(+v)?+v:3;
+  try{ localStorage.setItem('stok_rata_bulan',String(RATA_BULAN)); }catch(e){}
+  labelRataBulan();
+  if(_argsStok){ STOK_DATA=hitungStok(..._argsStok); mergeInfoMap(STOK_DATA); }
+  filterStok();
+}
+function labelRataBulan(){
+  const th=document.getElementById('thAvgN'); if(th) th.textContent='Avg '+RATA_BULAN+'Bln Terakhir';
+  document.querySelectorAll('.lblRataN').forEach(e=>e.textContent=RATA_BULAN);
+  const sel=document.getElementById('stokRataBulan'); if(sel) sel.value=String(RATA_BULAN);
+  const cb=document.querySelector('input[data-col="savg3"]'); if(cb&&cb.parentElement) cb.parentElement.lastChild.textContent=' Avg '+RATA_BULAN+'Bln Terakhir';
+}
+document.addEventListener('DOMContentLoaded',labelRataBulan);
 function filterStok(){
   const q=document.getElementById('stokSearch').value.toLowerCase();
   const kat=document.getElementById('stokKatFilter').value;
