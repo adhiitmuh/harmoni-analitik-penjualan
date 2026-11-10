@@ -136,7 +136,7 @@
   <span id="periodLabel" class="period-badge">Memuat...</span>
   <label style="margin-left:auto;padding:4px 12px;background:#034543;color:#fff;border-radius:20px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">
     📤 Update Data
-    <input type="file" id="globalOlseraInput" accept=".xlsx" multiple style="display:none" onchange="handleGlobalUpload(this.files)">
+    <input type="file" id="globalOlseraInput" accept=".xlsx,.zip" multiple style="display:none" onchange="handleGlobalUpload(this.files)">
   </label>
   <span id="globalUploadStatus" style="font-size:.72rem;color:#64748b;font-weight:500;white-space:nowrap"></span>
 </div>
@@ -431,7 +431,7 @@
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px">
         <label style="padding:6px 14px;background:#034543;color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">
           📤 Upload Data Penjualan
-          <input type="file" id="olseraInput" accept=".xlsx" multiple style="display:none" onchange="handleOlseraUpload(this.files)">
+          <input type="file" id="olseraInput" accept=".xlsx,.zip" multiple style="display:none" onchange="handleOlseraUpload(this.files)">
         </label>
         <span id="uploadStatus" style="font-size:.75rem;color:#64748b;font-weight:500"></span>
         <span id="stokTokoLabel" style="font-size:.75rem;color:#0369a1;font-weight:600;padding:4px 10px;background:#eff6ff;border-radius:8px"></span>
@@ -600,14 +600,43 @@ function loadXlsxThen(cb,st){
 function handleGlobalUpload(files){
   const st=document.getElementById('globalUploadStatus');
   st.textContent='⏳ Membaca file...';
-  loadXlsxThen(()=>processOlseraFiles(files,st),st);
+  loadXlsxThen(()=>bukaZipLalu(files,st),st);
+}
+
+// File ZIP (folder yang dikompres di aplikasi File iPad) → dibuka jadi daftar file .xlsx
+function bukaZipLalu(files,st){
+  const list=Array.from(files||[]);
+  const zip=list.filter(f=>/\.zip$/i.test(f.name));
+  if(!zip.length) return processOlseraFiles(list,st);
+  const lanjut=async()=>{
+    const hasil=list.filter(f=>!/\.zip$/i.test(f.name));
+    try{
+      for(const z of zip){
+        st.textContent='⏳ Membuka '+z.name+'...';
+        const arsip=await JSZip.loadAsync(await z.arrayBuffer());
+        for(const e of Object.values(arsip.files)){
+          const nama=e.name.split('/').pop();
+          if(e.dir||e.name.includes('__MACOSX')||nama.startsWith('.')||!/\.xlsx$/i.test(nama)) continue;
+          hasil.push(new File([await e.async('blob')],nama));
+        }
+      }
+    }catch(err){ st.textContent='⚠️ ZIP tidak bisa dibuka: '+err.message; return; }
+    if(!hasil.length){ st.textContent='⚠️ Tidak ada file .xlsx di dalam ZIP'; return; }
+    processOlseraFiles(hasil,st);
+  };
+  if(typeof JSZip!=='undefined') return lanjut();
+  st.textContent='⏳ Memuat pembuka ZIP...';
+  const sc=document.createElement('script');
+  sc.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  sc.onload=lanjut; sc.onerror=()=>{ st.textContent='⚠️ Gagal memuat pembuka ZIP. Cek koneksi internet.'; };
+  document.head.appendChild(sc);
 }
 
 function handleOlseraUpload(files){
   if(!files||!files.length) return;
   const st=document.getElementById('uploadStatus');
   st.textContent='⏳ Membaca file...';
-  loadXlsxThen(()=>processOlseraFiles(files,st),st);
+  loadXlsxThen(()=>bukaZipLalu(files,st),st);
 }
 
 function processOlseraFiles(files,st){
