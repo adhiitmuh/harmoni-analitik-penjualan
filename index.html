@@ -615,13 +615,17 @@ function processOlseraFiles(files,st){
   const rawRows=[];
   const errors=[];
   let done=0;
+  const bulanDipakai=new Set();
   Array.from(files).forEach(file=>{
     const bulan=bulanDariFile(file.name);
-    if(!bulan){
-      errors.push('Nama file tidak dikenali: '+file.name+' (perlu format YYYY-MM-DD di nama file)');
-      done++; if(done===files.length) finishUpload(rawRows,files.length,st,errors);
-      return;
-    }
+    const lewati=pesan=>{ errors.push(pesan); done++; if(done===files.length) finishUpload(rawRows,files.length,st,errors); };
+    if(!bulan) return lewati('Nama file tidak dikenali: '+file.name+' (perlu format YYYY-MM-DD di nama file)');
+    // Satu file harus satu bulan: export setahun/beberapa bulan akan tercatat semua di bulan pertama
+    const tgl=[...file.name.matchAll(/(\d{4})-(\d{2})-\d{2}/g)];
+    if(tgl.length>1&&(tgl[0][1]!==tgl[tgl.length-1][1]||tgl[0][2]!==tgl[tgl.length-1][2]))
+      return lewati(file.name+': berisi lebih dari 1 bulan ('+tgl[0][0]+' s/d '+tgl[tgl.length-1][0]+') — export dari Olsera per bulan (tanggal 1 s/d akhir bulan)');
+    if(bulanDipakai.has(bulan)) return lewati(file.name+': bulan '+bulan+' sudah ada di file lain yang dipilih — dilewati supaya tidak terhitung dobel');
+    bulanDipakai.add(bulan);
     const reader=new FileReader();
     reader.onload=e=>{
       try{
@@ -670,7 +674,8 @@ function finishUpload(rawRows,nFiles,st,errors=[]){
   }
   rebuildAllData(rawRows);
   const nBulan=[...new Set(rawRows.map(r=>r.bulan))].length;
-  st.textContent='✅ '+nFiles+' file · '+nBulan+' bulan · '+rawRows.length+' transaksi';
+  st.textContent='✅ '+(nFiles-errors.length)+' file · '+nBulan+' bulan · '+rawRows.length+' transaksi'+(errors.length?' · ⚠️ '+errors.length+' file dilewati':'');
+  if(errors.length) setTimeout(()=>alert('File yang dilewati:\n\n• '+errors.join('\n• ')),50);
   try{ localStorage.setItem('olsera_rawrows',JSON.stringify(rawRows)); localStorage.removeItem('olsera_cloud_sig'); }catch(e){ console.warn('localStorage penuh, data penjualan tidak tersimpan:',e); }
   // Simpan ke Firestore per bulan agar sinkron lintas perangkat
   const okMsg=st.textContent;
