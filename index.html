@@ -1513,6 +1513,23 @@ function rekBadge(qty){
 }
 
 // ── Stok fisik (toko & gudang) ───────────────────────────────────────────────
+// Info produk dari file stok disimpan berpotongan: settings/stok_info_meta + settings/stok_info_p0..pN
+async function simpanStokInfoCloud(db){
+  const teks=JSON.stringify(STOK_INFO), UK=600000, n=Math.max(1,Math.ceil(teks.length/UK));
+  const batch=db.batch();
+  for(let i=0;i<n;i++) batch.set(db.collection('settings').doc('stok_info_p'+i),{i,data:teks.slice(i*UK,(i+1)*UK)});
+  batch.set(db.collection('settings').doc('stok_info_meta'),{n,updated_at:firebase.firestore.FieldValue.serverTimestamp(),updated_by:_currentUserName||''});
+  await batch.commit();
+}
+async function muatStokInfoCloud(db){
+  const meta=await db.collection('settings').doc('stok_info_meta').get();
+  if(meta.exists&&meta.data().n){
+    const n=meta.data().n, parts=await Promise.all(Array.from({length:n},(_,i)=>db.collection('settings').doc('stok_info_p'+i).get()));
+    if(parts.every(d=>d.exists)) return JSON.parse(parts.map(d=>d.data().data).join(''));
+  }
+  const lama=await db.collection('settings').doc('stok_info').get();  // format lama (satu dokumen)
+  return lama.exists?(lama.data().info||{}):{};
+}
 function uploadStokFisik(files, jenis){
   if(!files||!files.length) return;
   const doUpload=()=>{
@@ -1545,18 +1562,22 @@ function uploadStokFisik(files, jenis){
       filterInventori();
       // Simpan ke Firestore agar sinkron lintas perangkat
       (async()=>{
+        const tandai=t=>['stokTokoLabel','invTokoLabel','stokGudangLabel','invGudangLabel'].forEach(id=>{const el=document.getElementById(id); if(el&&id.toLowerCase().includes(jenis)) el.textContent+=t;});
+        if(!_app) return;
+        try{ await _fbReady; }catch(e){ tandai(' · ⚠️ belum login — hanya di perangkat ini'); return; }
+        const db=_app.firestore();
+        // 1) Jumlah stok (ringan) — disimpan dulu, terpisah dari info produk
         try{
-          if(!_app) return;
-          await _fbReady;
           const upd={[jenis]:map};
           upd[jenis+'_updated_at']=firebase.firestore.FieldValue.serverTimestamp();
           if(_currentUserName) upd[jenis+'_updated_by']=_currentUserName;
-          await _app.firestore().collection('settings').doc('stok_fisik').set(upd,{merge:true});
-          if(Object.keys(info).length) await _app.firestore().collection('settings').doc('stok_info').set({info:STOK_INFO,updated_at:firebase.firestore.FieldValue.serverTimestamp()});
-        }catch(e){
-          console.error('Gagal simpan stok ke Firestore:',e);
-          ['stokTokoLabel','invTokoLabel','stokGudangLabel','invGudangLabel'].forEach(id=>{const el=document.getElementById(id); if(el&&id.toLowerCase().includes(jenis)) el.textContent+=' · ⚠️ gagal sinkron cloud';});
-        }
+          await db.collection('settings').doc('stok_fisik').set(upd,{merge:true});
+        }catch(e){ console.error('Gagal simpan stok:',e); tandai(' · ⚠️ stok gagal sinkron cloud ('+(e.code||e.message)+')'); return; }
+        // 2) Info produk (nama, kategori, harga) — dipecah supaya tidak melewati batas 1 MB per dokumen
+        if(Object.keys(info).length){
+          try{ await simpanStokInfoCloud(db); tandai(' · ☁️ tersinkron'); }
+          catch(e){ console.error('Gagal simpan info produk:',e); tandai(' · ☁️ stok tersinkron · ⚠️ info produk gagal ('+(e.code||e.message)+')'); }
+        } else tandai(' · ☁️ tersinkron');
       })();
     };
     Array.from(files).forEach(file=>{
@@ -1935,10 +1956,10 @@ function _setUpdateBadge(d){
       db.collection('settings').doc('stok_fisik').get(),
       db.collection('settings').doc('inv_excluded').get(),
       _peranAnalitik==='admin'?db.collection('penjualan').get():db.collection('penjualan_operator').get(),
-      db.collection('settings').doc('stok_info').get()
+      muatStokInfoCloud(db)
     ]);
-    if(infoR.status==='fulfilled'&&infoR.value.exists){
-      const inf=infoR.value.data().info;
+    if(infoR.status==='fulfilled'&&infoR.value){
+      const inf=infoR.value;
       if(inf&&Object.keys(inf).length){ STOK_INFO=inf; try{ localStorage.setItem('stok_info',JSON.stringify(inf)); }catch(e){} }
     }
     const errs=[stokR,exclR,pjR,infoR].filter(r=>r.status==='rejected').map(r=>r.reason);
