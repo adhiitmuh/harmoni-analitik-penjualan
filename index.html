@@ -1188,11 +1188,13 @@ const _infoMap={};
 function mergeInfoMap(list){ list.forEach(s=>{ _infoMap[s.sku]=s; }); }
 
 // Nama/kategori utamakan data penjualan; HPP & harga jual utamakan harga master di file stok.
+// Modal (HPP) yang diisi di Stok Manager — dipakai lebih dulu (paling baru & sudah dicek manual)
+let MODAL_SM={};
 function skuInfo(sku){
   const sale=_infoMap[sku]||{}, st=STOK_INFO[sku]||[];
-  const [nm,vr,kt,hb,hj]=st;
+  const [nm,vr,kt,hb,hj]=st, msm=MODAL_SM[String(sku).toUpperCase()]||0;
   return {produk:sale.produk||nm||sku, varian:sale.varian||vr||'', kategori:sale.kategori||kt||'Lainnya',
-    divisi:sale.divisi||'', hpp_unit:hb>0?hb:(sale.hpp_unit||0), harga_unit:hj>0?hj:(sale.harga_unit||0),
+    divisi:sale.divisi||'', hpp_unit:msm>0?msm:(hb>0?hb:(sale.hpp_unit||0)), harga_unit:hj>0?hj:(sale.harga_unit||0),
     last_sold:sale.last_sold||''};
 }
 mergeInfoMap(STOK_DATA);
@@ -1576,6 +1578,8 @@ function uploadStokFisik(files, jenis){
           if(_currentUserName) upd[jenis+'_updated_by']=_currentUserName;
           await db.collection('settings').doc('stok_fisik').set(upd,{merge:true});
         }catch(e){ console.error('Gagal simpan stok:',e); tandai(' · ⚠️ stok gagal sinkron cloud ('+(e.code||e.message)+')'); return; }
+        // 1b) Stok Manager ikut diperbarui (satu kali upload untuk kedua aplikasi)
+        sinkronKeStokManager(jenis,map,info).then(n=>tandai(n>=0?' · 📦 Stok Manager: '+n+' produk diperbarui':' · ⚠️ Stok Manager gagal diperbarui')).catch(()=>{});
         // 2) Info produk (nama, kategori, harga) — dipecah supaya tidak melewati batas 1 MB per dokumen
         if(Object.keys(info).length){
           try{ await simpanStokInfoCloud(db); tandai(' · ☁️ tersinkron'); }
@@ -1615,6 +1619,42 @@ function uploadStokFisik(files, jenis){
   const s=document.createElement('script');
   s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
   s.onload=doUpload; document.head.appendChild(s);
+}
+
+// ── Sinkron ke Stok Manager (project harmoni-stok, koleksi products) ──
+// Hanya produk yang berubah yang ditulis. Modal hanya diisi kalau Olsera punya nilainya (modal manual tidak ditimpa 0).
+let _appStok=null;
+function appStokManager(){
+  if(_appStok) return _appStok;
+  _appStok=firebase.apps.find(a=>a.name==='harmoni-stok')||firebase.initializeApp({
+    apiKey:'AIzaSyBIFnBGwKzvktTmb8FcUr0SWV-mOiWosIk', authDomain:'harmoni-stok.firebaseapp.com', projectId:'harmoni-stok',
+    storageBucket:'harmoni-stok.firebasestorage.app', messagingSenderId:'481063789182', appId:'1:481063789182:web:a0d0e36ea3e3e4b2596e2f'
+  },'harmoni-stok');
+  return _appStok;
+}
+async function sinkronKeStokManager(jenis,map,info){
+  try{
+    const db=appStokManager().firestore(), FV=firebase.firestore.FieldValue;
+    const fStok=jenis==='gudang'?'stock_qty_gudang':'stock_qty_toko', fBeli=jenis==='gudang'?'buy_price_gudang':'buy_price_toko';
+    const lama={}; (await db.collection('products').get()).forEach(d=>{ lama[d.id]=d.data(); });
+    const baru={}; Object.entries(map).forEach(([k,q])=>{ const K=String(k).trim().toUpperCase(); if(K) baru[K]=(baru[K]||0)+(Number(q)||0); });
+    const infoUp={}; Object.entries(info).forEach(([k,v])=>{ infoUp[String(k).trim().toUpperCase()]=v; });
+    const tulis=[];
+    Object.entries(baru).forEach(([K,q])=>{
+      const p=lama[K], inf=infoUp[K]||[];
+      const [nm,vr,kt,hb,hj]=inf, d={};
+      if(!p||p[fStok]!==q) d[fStok]=q;
+      if(hb>0&&(!p||!(p[fBeli]>0))) d[fBeli]=hb;           // modal dari Olsera hanya mengisi yang kosong
+      if(!p||!(p.lokasi||[]).includes(jenis)) d.lokasi=FV.arrayUnion(jenis);
+      if(!p){ Object.assign(d,{sku:K,name:String(nm||'').toUpperCase(),category:kt||'',variant_names:vr||'',pos_sell_price:hj||0}); }
+      else if(hj>0&&p.pos_sell_price!==hj) d.pos_sell_price=hj;
+      if(Object.keys(d).length){ d.updated_at=FV.serverTimestamp(); d.diperbarui_dari='Analitik'; tulis.push([K,d]); }
+    });
+    // Produk yang tidak ada lagi di file lokasi ini → stoknya 0
+    Object.entries(lama).forEach(([K,p])=>{ if(!(K in baru)&&(p.lokasi||[]).includes(jenis)&&(+p[fStok]||0)!==0) tulis.push([K,{[fStok]:0,updated_at:FV.serverTimestamp(),diperbarui_dari:'Analitik'}]); });
+    for(let i=0;i<tulis.length;i+=400){ const b=db.batch(); tulis.slice(i,i+400).forEach(([K,d])=>b.set(db.collection('products').doc(K),d,{merge:true})); await b.commit(); }
+    return tulis.length;
+  }catch(e){ console.error('Sinkron Stok Manager gagal:',e); return -1; }
 }
 
 function updateBudgetRow(input, sku, hpp, hju, perlBeli){
@@ -1979,12 +2019,14 @@ function _setUpdateBadge(d){
   if(st) st.textContent='☁️ Sinkron data...';
   _fbReady.then(async()=>{
     const db=_app.firestore();
-    const [stokR,exclR,pjR,infoR]=await Promise.allSettled([
+    const [stokR,exclR,pjR,infoR,modalR]=await Promise.allSettled([
       db.collection('settings').doc('stok_fisik').get(),
       db.collection('settings').doc('inv_excluded').get(),
       _peranAnalitik==='admin'?db.collection('penjualan').get():db.collection('penjualan_operator').get(),
-      muatStokInfoCloud(db)
+      muatStokInfoCloud(db),
+      db.collection('settings').doc('modal_produk').get()
     ]);
+    if(modalR.status==='fulfilled'&&modalR.value.exists){ MODAL_SM=modalR.value.data().m||{}; }
     if(infoR.status==='fulfilled'&&infoR.value){
       const inf=infoR.value;
       if(inf&&Object.keys(inf).length){ STOK_INFO=inf; try{ localStorage.setItem('stok_info',JSON.stringify(inf)); }catch(e){} }
