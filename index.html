@@ -445,6 +445,9 @@
           <option value="">Semua</option>
           <option value="beli">Perlu Beli</option>
           <option value="cukup">Stok Cukup</option>
+          <option value="kosong_laku">🔥 Stok kosong &amp; laku</option>
+          <option value="hampir_laku">⚠️ Hampir habis &amp; laku (&lt; 1 bln)</option>
+          <option value="kosong">🔴 Stok kosong (semua)</option>
         </select>
         <select id="stokKatFilter" onchange="filterStok()">
           <option value="">Semua Kategori</option>
@@ -1747,8 +1750,17 @@ function filterStok(){
       const tot=(STOK_TOKO[s.sku]||0)+(STOK_GUDANG[s.sku]||0);
       if(tot<s.rek_qty)return false;
     }
+    // Stok kosong: toko + gudang <= 0. "Laku" = masih terjual dalam rata-rata N bulan terakhir
+    if(beli==='kosong'||beli==='kosong_laku'||beli==='hampir_laku'){
+      const tot=(STOK_TOKO[s.sku]||0)+(STOK_GUDANG[s.sku]||0), laku=(+s.recent3_avg||0)>0;
+      if(beli==='kosong'&&tot>0)return false;
+      if(beli==='kosong_laku'&&(tot>0||!laku))return false;
+      if(beli==='hampir_laku'&&(!laku||tot<=0||tot>=s.recent3_avg))return false;
+    }
     return true;
   });
+  // Yang paling laku di atas
+  if(beli==='kosong_laku'||beli==='hampir_laku') d=d.slice().sort((a,b)=>(b.recent3_avg||0)-(a.recent3_avg||0)||b.total_qty-a.total_qty);
   renderStok(d);
   updateTotalBudget();
 }
