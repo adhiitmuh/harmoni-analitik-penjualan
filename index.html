@@ -1775,30 +1775,45 @@ function stokKolomAll(visible){
   });
 }
 
+// Excel/CSV mengikuti kolom yang sedang tampil (pengaturan "Kolom"); No, SKU, Produk, Varian selalu ikut
 function stokTableData(){
   const src = currentStokData.length ? currentStokData : STOK_DATA;
-  const headers=['No','SKU','Produk','Varian','Total Qty Terjual','Stok Toko','Stok Gudang','Total Stok','Perlu Beli','Final Order','Est. Modal','Est. Nilai Jual','Est. Profit','Est. Margin'];
-  const rows=src.map((s,i)=>{
-    const final=getFinal(s.sku);
-    const finalNum=final?Number(final):0;
-    const stToko=STOK_TOKO[s.sku]||0;
-    const stGudang=STOK_GUDANG[s.sku]||0;
-    const stTotal=stToko+stGudang;
-    const perlBeli=Math.max(0,s.rek_qty-stTotal);
-    const inf=skuInfo(s.sku);
-    const hpp=inf.hpp_unit||0;
-    const harga=inf.harga_unit||0;
-    const qty4c=finalNum>0?finalNum:perlBeli;
-    const modal=qty4c*hpp, jual=qty4c*harga, profit=jual-modal;
-    const margin=jual>0?(profit/jual*100):0;
-    return [i+1,s.sku,s.produk,s.varian,s.total_qty,stToko||0,stGudang||0,stTotal||0,perlBeli||0,finalNum||0,modal,jual,profit,jual>0?+(margin.toFixed(1)):0];
-  });
-  // Summary row
+  const wrap=document.getElementById('stokTableWrap');
+  const tampil=k=>!wrap||!wrap.classList.contains('stok-hide-'+k);
+  const hit=s=>{
+    const final=getFinal(s.sku), finalNum=final?Number(final):0;
+    const stToko=STOK_TOKO[s.sku]||0, stGudang=STOK_GUDANG[s.sku]||0, stTotal=stToko+stGudang;
+    const perlBeli=Math.max(0,s.rek_qty-stTotal), inf=skuInfo(s.sku), hpp=inf.hpp_unit||0, harga=inf.harga_unit||0;
+    const qty4c=finalNum>0?finalNum:perlBeli, modal=qty4c*hpp, jual=qty4c*harga, profit=jual-modal;
+    return {finalNum,stToko,stGudang,stTotal,perlBeli,modal,jual,profit,margin:jual>0?+(profit/jual*100).toFixed(1):0};
+  };
+  const TREN={naik:'Naik',turun:'Turun',stabil:'Stabil',tidak_terjual:'Tidak terjual'};
+  const KOLOM=[
+    ['skat','Kategori',s=>s.kategori],
+    ['savg','Avg/Bln',s=>s.avg_per_bulan],
+    ['savg3','Avg '+(typeof RATA_BULAN!=='undefined'?RATA_BULAN:3)+'Bln Terakhir',s=>s.recent3_avg],
+    ['strnd','Tren',s=>TREN[s.trend]||s.trend],
+    ['strndp','Tren %',s=>+(+s.trend_pct||0).toFixed(1)],
+    ['stipe','Tipe',s=>s.is_seasonal?'Musiman (puncak '+s.peak_month+')':'Reguler'],
+    ['sqty','Total Qty Terjual',s=>s.total_qty],
+    ['srek','Rek. Stok',s=>s.rek_qty],
+    ['stoko','Stok Toko',(s,h)=>h.stToko],
+    ['sgdng','Stok Gudang',(s,h)=>h.stGudang],
+    ['stotal','Total Stok',(s,h)=>h.stTotal],
+    ['sbeli','Perlu Beli',(s,h)=>h.perlBeli],
+    ['slast','Terakhir Terjual',s=>s.last_sold||''],
+    ['sfinal','Final Order',(s,h)=>h.finalNum||0],
+    ['smodal','Est. Modal',(s,h)=>h.modal],
+    ['sjual','Est. Nilai Jual',(s,h)=>h.jual],
+    ['suntung','Est. Profit',(s,h)=>h.profit],
+    ['suntung','Est. Margin %',(s,h)=>h.margin],
+  ].filter(k=>tampil(k[0]));
+  const headers=['No','SKU','Produk','Varian',...KOLOM.map(k=>k[1])];
   let totModal=0,totJual=0;
-  rows.forEach(r=>{totModal+=Number(r[10])||0;totJual+=Number(r[11])||0;});
+  const rows=src.map((s,i)=>{ const h=hit(s); totModal+=h.modal; totJual+=h.jual; return [i+1,s.sku,s.produk,s.varian,...KOLOM.map(k=>k[2](s,h))]; });
   const totProfit=totJual-totModal;
-  const totMargin=totJual>0?(totProfit/totJual*100):0;
-  rows.push(['','','','TOTAL','','','','','','',totModal,totJual,totProfit,totJual>0?+(totMargin.toFixed(1)):0]);
+  const tot={'Est. Modal':totModal,'Est. Nilai Jual':totJual,'Est. Profit':totProfit,'Est. Margin %':totJual>0?+(totProfit/totJual*100).toFixed(1):0};
+  if(KOLOM.some(k=>k[1] in tot)) rows.push(['','','','TOTAL',...KOLOM.map(k=>k[1] in tot?tot[k[1]]:'')]);
   return {headers,rows};
 }
 
@@ -1818,7 +1833,7 @@ function downloadStokXLSX(){
     const wb=XLSX.utils.book_new();
     const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
     // Column widths
-    ws['!cols']=[{wch:4},{wch:18},{wch:30},{wch:20},{wch:22},{wch:12},{wch:10},{wch:16},{wch:8},{wch:8},{wch:10},{wch:16},{wch:12}];
+    ws['!cols']=headers.map((h,i)=>({wch:i===0?5:i===2?34:Math.max(10,h.length+2)}));
     XLSX.utils.book_append_sheet(wb,ws,'Rekomendasi Stok');
     XLSX.writeFile(wb,'Rekomendasi_Stok_Harmoni.xlsx');
   };
