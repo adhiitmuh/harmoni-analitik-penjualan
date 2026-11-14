@@ -81,7 +81,7 @@
   .bRek{background:linear-gradient(135deg,var(--beige),var(--beige2));color:var(--g);padding:3px 10px;border-radius:6px;font-weight:800;font-size:.8rem;border:1px solid rgba(3,69,67,.15)}
   .gen-info{text-align:right;font-size:.7rem;color:#94a3b8;padding:6px 24px 16px}
   .sc-hide{display:none!important}
-  #stokTableWrap.stok-hide-skat .sc-skat,#stokTableWrap.stok-hide-savg .sc-savg,#stokTableWrap.stok-hide-savg3 .sc-savg3,#stokTableWrap.stok-hide-strnd .sc-strnd,#stokTableWrap.stok-hide-strndp .sc-strndp,#stokTableWrap.stok-hide-stipe .sc-stipe,#stokTableWrap.stok-hide-sqty .sc-sqty,#stokTableWrap.stok-hide-srek .sc-srek,#stokTableWrap.stok-hide-stoko .sc-stoko,#stokTableWrap.stok-hide-sgdng .sc-sgdng,#stokTableWrap.stok-hide-stotal .sc-stotal,#stokTableWrap.stok-hide-sbeli .sc-sbeli,#stokTableWrap.stok-hide-slast .sc-slast,#stokTableWrap.stok-hide-sfinal .sc-sfinal,#stokTableWrap.stok-hide-smodal .sc-smodal,#stokTableWrap.stok-hide-sjual .sc-sjual,#stokTableWrap.stok-hide-suntung .sc-suntung{display:none!important}
+  #stokTableWrap.stok-hide-skat .sc-skat,#stokTableWrap.stok-hide-savg .sc-savg,#stokTableWrap.stok-hide-savg3 .sc-savg3,#stokTableWrap.stok-hide-strnd .sc-strnd,#stokTableWrap.stok-hide-strndp .sc-strndp,#stokTableWrap.stok-hide-stipe .sc-stipe,#stokTableWrap.stok-hide-sqty .sc-sqty,#stokTableWrap.stok-hide-srek .sc-srek,#stokTableWrap.stok-hide-stoko .sc-stoko,#stokTableWrap.stok-hide-sgdng .sc-sgdng,#stokTableWrap.stok-hide-stotal .sc-stotal,#stokTableWrap.stok-hide-sbeli .sc-sbeli,#stokTableWrap.stok-hide-slast .sc-slast,#stokTableWrap.stok-hide-ssup .sc-ssup,#stokTableWrap.stok-hide-sfinal .sc-sfinal,#stokTableWrap.stok-hide-smodal .sc-smodal,#stokTableWrap.stok-hide-sjual .sc-sjual,#stokTableWrap.stok-hide-suntung .sc-suntung{display:none!important}
   #stokKolomPanel{display:none;position:absolute;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,.14);min-width:220px;right:0;top:calc(100% + 4px)}
   #stokKolomPanel label{display:flex;align-items:center;gap:7px;font-size:.79rem;padding:2px 0;cursor:pointer;color:#334155;user-select:none}
   #stokKolomPanel .kp-group{font-size:.67rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 2px;padding-top:6px;border-top:1px solid #f1f5f9}
@@ -441,6 +441,7 @@
       </div>
       <div class="filter-row" style="margin:6px 0 0;gap:8px;position:relative">
         <input id="stokSearch" type="text" placeholder="Cari produk..." oninput="filterStok()" style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.82rem;width:200px">
+        <select id="stokSupFilter" onchange="filterStok()" title="Supplier (diatur di Stok Manager)"><option value="">Semua supplier</option></select>
         <select id="stokBeliFilter" onchange="filterStok()">
           <option value="">Semua</option>
           <option value="beli">Perlu Beli</option>
@@ -489,6 +490,7 @@
           <label><input type="checkbox" data-col="stotal" checked onchange="toggleStokCol('stotal',this.checked)"> Total Stok</label>
           <label><input type="checkbox" data-col="sbeli" checked onchange="toggleStokCol('sbeli',this.checked)"> Perlu Beli</label>
           <label><input type="checkbox" data-col="slast" checked onchange="toggleStokCol('slast',this.checked)"> Terakhir Terjual</label>
+          <label><input type="checkbox" data-col="ssup" checked onchange="toggleStokCol('ssup',this.checked)"> Supplier</label>
           <div class="kp-group">Finansial</div>
           <label><input type="checkbox" data-col="sfinal" checked onchange="toggleStokCol('sfinal',this.checked)"> Final Order</label>
           <label><input type="checkbox" data-col="smodal" checked onchange="toggleStokCol('smodal',this.checked)"> Est. Modal</label>
@@ -515,6 +517,7 @@
         <th class="tr sc-stotal" style="background:#f0fdf4;color:#166534">Total Stok</th>
         <th class="tr sc-sbeli" style="background:#fef2f2;color:#dc2626">Perlu Beli</th>
         <th class="sc-slast">Terakhir Terjual</th>
+        <th class="sc-ssup" title="Diatur di Stok Manager → Supplier">Supplier</th>
         <th class="sc-sfinal" style="background:#dcfce7;color:#166534;min-width:90px">Final Order</th>
         <th class="tr sc-smodal" style="background:#fef9c3;color:#854d0e;min-width:110px">Est. Modal</th>
         <th class="tr sc-sjual" style="background:#dcfce7;color:#166534;min-width:110px">Est. Nilai Jual</th>
@@ -1190,7 +1193,18 @@ function mergeInfoMap(list){ list.forEach(s=>{ _infoMap[s.sku]=s; }); }
 
 // Nama/kategori utamakan data penjualan; HPP & harga jual utamakan harga master di file stok.
 // Modal (HPP) yang diisi di Stok Manager — dipakai lebih dulu (paling baru & sudah dicek manual)
-let MODAL_SM={};
+let MODAL_SM={}, SUP_SKU={}, SUP_INFO={};
+const esc0=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function supplierSku(sku){ return SUP_SKU[String(sku).toUpperCase()]||''; }
+function lamaKirim(sku){ const s=supplierSku(sku); return s&&SUP_INFO[s]?(+SUP_INFO[s].lama||0):0; }
+// Target stok = rekomendasi + kebutuhan selama menunggu barang datang (laku/hari × lama kirim)
+function targetStok(s){ const L=lamaKirim(s.sku); return s.rek_qty+(L>0?Math.ceil((+s.recent3_avg||0)/30*L):0); }
+function isiFilterSupplier(){
+  const sel=document.getElementById('stokSupFilter'); if(!sel) return; const v=sel.value;
+  const nama=[...new Set([...Object.keys(SUP_INFO),...Object.values(SUP_SKU)])].filter(Boolean).sort();
+  sel.innerHTML='<option value="">Semua supplier</option><option value="-">— Belum ada supplier</option>'+nama.map(n=>`<option value="${esc0(n)}">${esc0(n)}</option>`).join('');
+  sel.value=v;
+}
 function skuInfo(sku){
   const sale=_infoMap[sku]||{}, st=STOK_INFO[sku]||[];
   const [nm,vr,kt,hb,hj]=st, msm=MODAL_SM[String(sku).toUpperCase()]||0;
@@ -1682,7 +1696,7 @@ function updateTotalBudget(){
   (currentStokData||[]).forEach(s=>{
     const fin=Number(getFinal(s.sku))||0;
     const stTotal=(STOK_TOKO[s.sku]||0)+(STOK_GUDANG[s.sku]||0);
-    const qty=fin>0?fin:Math.max(0,s.rek_qty-stTotal);
+    const qty=fin>0?fin:Math.max(0,targetStok(s)-stTotal);
     const inf=skuInfo(s.sku);
     totalModal+=qty*(inf.hpp_unit||0); totalJual+=qty*(inf.harga_unit||0);
   });
@@ -1699,8 +1713,33 @@ function updateTotalBudget(){
 }
 
 function stokKey(sku){ return 'final_order_'+sku; }
-function saveFinal(sku,val){ localStorage.setItem(stokKey(sku), val); }
-function getFinal(sku){ return localStorage.getItem(stokKey(sku))||''; }
+// Final Order disimpan di cloud (settings/final_order) supaya sama di semua perangkat; localStorage sebagai cadangan
+let FINAL_CLOUD=null, _finalAntre={}, _finalT=null;
+function saveFinal(sku,val){
+  try{ localStorage.setItem(stokKey(sku), val); }catch(e){}
+  if(FINAL_CLOUD) FINAL_CLOUD[sku]=val;
+  _finalAntre[sku]=val; clearTimeout(_finalT); _finalT=setTimeout(kirimFinalCloud,800);
+}
+function getFinal(sku){ if(FINAL_CLOUD&&sku in FINAL_CLOUD) return FINAL_CLOUD[sku]||''; try{ return localStorage.getItem(stokKey(sku))||''; }catch(e){ return ''; } }
+async function kirimFinalCloud(){
+  const antre=_finalAntre; _finalAntre={};
+  if(!_app||!Object.keys(antre).length) return;
+  try{
+    await _fbReady; const db=_app.firestore(), FV=firebase.firestore.FieldValue, args=[];
+    Object.entries(antre).forEach(([k,v])=>{ args.push(new firebase.firestore.FieldPath('m',k), (v===''||v==null||+v<=0)?FV.delete():+v); });
+    args.push('updated_by',_currentUserName||''); args.push('updated_at',FV.serverTimestamp());
+    const ref=db.collection('settings').doc('final_order');
+    try{ await ref.update(...args); }catch(e){ if(e.code==='not-found'){ await ref.set({m:{}}); await ref.update(...args); } else throw e; }
+  }catch(e){ console.error('Final Order gagal sinkron:',e); Object.assign(_finalAntre,antre); }
+}
+async function muatFinalCloud(db){
+  const d=await db.collection('settings').doc('final_order').get();
+  FINAL_CLOUD={};
+  if(d.exists) Object.entries(d.data().m||{}).forEach(([k,v])=>FINAL_CLOUD[k]=String(v));
+  // Pindahkan Final Order lama yang hanya ada di perangkat ini ke cloud (sekali)
+  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith('final_order_')){ const sku=k.slice(12), v=localStorage.getItem(k); if(v&&+v>0&&!(sku in FINAL_CLOUD)){ FINAL_CLOUD[sku]=v; _finalAntre[sku]=v; } } } }catch(e){}
+  if(Object.keys(_finalAntre).length) kirimFinalCloud();
+}
 
 // Restore stok label on load
 (function(){
@@ -1723,7 +1762,7 @@ function renderStok(data){
     const stToko=STOK_TOKO[s.sku]||0;
     const stGudang=STOK_GUDANG[s.sku]||0;
     const stTotal=stToko+stGudang;
-    const perlBeli=Math.max(0,s.rek_qty-stTotal);
+    const perlBeli=Math.max(0,targetStok(s)-stTotal);
     const inf=skuInfo(s.sku);
     const hpp=inf.hpp_unit||0;
     const harga=inf.harga_unit||0;
@@ -1731,7 +1770,7 @@ function renderStok(data){
     const qty4calc=finalVal>0?finalVal:perlBeli;
     const estBudget=qty4calc*hpp;
     const estJual=qty4calc*harga;
-    const stOk=stTotal>=s.rek_qty;
+    const stOk=stTotal>=targetStok(s);
     const rowBg=i%2===0?'#fff':'#f8fafc';
     return `<tr>
       <td class="tc" style="position:sticky;left:0;z-index:2;background:${rowBg};min-width:38px">${i+1}</td>
@@ -1745,12 +1784,13 @@ function renderStok(data){
       <td class="tr num sc-strndp" style="color:${tcolor}">${tpct}</td>
       <td class="tc sc-stipe">${s.is_seasonal?'<span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:12px;padding:2px 8px;font-size:.72rem;font-weight:700;white-space:nowrap">🗓 Musiman<br><span style="font-weight:400;font-size:.68rem">Puncak: '+s.peak_month+'</span></span>':'<span style="font-size:.78rem;color:#64748b">Reguler</span>'}</td>
       <td class="tr num sc-sqty">${s.total_qty.toLocaleString('id-ID')}</td>
-      <td class="tc sc-srek">${rekBadge(s.rek_qty)}</td>
+      <td class="tc sc-srek" title="${lamaKirim(s.sku)?'termasuk kebutuhan selama '+lamaKirim(s.sku)+' hari pengiriman':''}">${rekBadge(targetStok(s))}</td>
       <td class="tr num sc-stoko" style="color:#0369a1">${stToko>0?stToko:'—'}</td>
       <td class="tr num sc-sgdng" style="color:#7c3aed">${stGudang>0?stGudang:'—'}</td>
       <td class="tr num sc-stotal" style="font-weight:700;color:${stOk?'#166534':'#dc2626'}">${stTotal>0?stTotal:'—'}</td>
       <td class="tr num sc-sbeli" style="font-weight:700;color:#dc2626">${perlBeli>0?perlBeli:(stTotal>0?'✓':'—')}</td>
       <td class="tc sc-slast" style="font-size:.78rem;color:#64748b">${s.last_sold||'—'}</td>
+      <td class="sc-ssup" style="font-size:.76rem;white-space:nowrap">${supplierSku(s.sku)?esc0(supplierSku(s.sku))+(lamaKirim(s.sku)?'<div style="color:#64748b;font-size:.7rem">kirim '+lamaKirim(s.sku)+' hr</div>':''):'<span style="color:#94a3b8">—</span>'}</td>
       <td class="tc sc-sfinal"><input type="number" min="0" id="${skuId}" value="${savedFinal}"
         oninput="saveFinal('${s.sku}',this.value);updateBudgetRow(this,'${s.sku}',${hpp},${harga},${perlBeli})"
         style="width:76px;padding:4px 8px;border:1.5px solid #86efac;border-radius:6px;text-align:right;font-family:'Plus Jakarta Sans',sans-serif;font-size:.85rem;font-weight:600;color:#166534;background:#f0fdf4;outline:none"
@@ -1782,18 +1822,21 @@ function filterStok(){
   const kat=document.getElementById('stokKatFilter').value;
   const trend=document.getElementById('stokTrendFilter').value;
   const beli=document.getElementById('stokBeliFilter').value;
+  const supF=document.getElementById('stokSupFilter')?.value||'';
   let d=stokDataWithUnsold().filter(s=>{
+    if(supF==='-'&&supplierSku(s.sku))return false;
+    if(supF&&supF!=='-'&&supplierSku(s.sku)!==supF)return false;
     if(q&&!s.produk.toLowerCase().includes(q)&&!s.sku.toLowerCase().includes(q)&&!s.varian.toLowerCase().includes(q))return false;
     if(kat&&s.kategori!==kat)return false;
     if(trend==='musiman'){if(!s.is_seasonal)return false;}
     else if(trend&&s.trend!==trend)return false;
     if(beli==='beli'){
       const tot=(STOK_TOKO[s.sku]||0)+(STOK_GUDANG[s.sku]||0);
-      if(tot>=s.rek_qty)return false;
+      if(tot>=targetStok(s))return false;
     }
     if(beli==='cukup'){
       const tot=(STOK_TOKO[s.sku]||0)+(STOK_GUDANG[s.sku]||0);
-      if(tot<s.rek_qty)return false;
+      if(tot<targetStok(s))return false;
     }
     // Stok kosong: toko + gudang <= 0. "Laku" = masih terjual dalam rata-rata N bulan terakhir
     if(beli==='pindah'&&!((STOK_TOKO[s.sku]||0)<=0&&(STOK_GUDANG[s.sku]||0)>0))return false;
@@ -1841,7 +1884,7 @@ function stokTableData(){
   const hit=s=>{
     const final=getFinal(s.sku), finalNum=final?Number(final):0;
     const stToko=STOK_TOKO[s.sku]||0, stGudang=STOK_GUDANG[s.sku]||0, stTotal=stToko+stGudang;
-    const perlBeli=Math.max(0,s.rek_qty-stTotal), inf=skuInfo(s.sku), hpp=inf.hpp_unit||0, harga=inf.harga_unit||0;
+    const perlBeli=Math.max(0,targetStok(s)-stTotal), inf=skuInfo(s.sku), hpp=inf.hpp_unit||0, harga=inf.harga_unit||0;
     const qty4c=finalNum>0?finalNum:perlBeli, modal=qty4c*hpp, jual=qty4c*harga, profit=jual-modal;
     return {finalNum,stToko,stGudang,stTotal,perlBeli,modal,jual,profit,margin:jual>0?+(profit/jual*100).toFixed(1):0};
   };
@@ -1854,12 +1897,14 @@ function stokTableData(){
     ['strndp','Tren %',s=>+(+s.trend_pct||0).toFixed(1)],
     ['stipe','Tipe',s=>s.is_seasonal?'Musiman (puncak '+s.peak_month+')':'Reguler'],
     ['sqty','Total Qty Terjual',s=>s.total_qty],
-    ['srek','Rek. Stok',s=>s.rek_qty],
+    ['srek','Rek. Stok',s=>targetStok(s)],
     ['stoko','Stok Toko',(s,h)=>h.stToko],
     ['sgdng','Stok Gudang',(s,h)=>h.stGudang],
     ['stotal','Total Stok',(s,h)=>h.stTotal],
     ['sbeli','Perlu Beli',(s,h)=>h.perlBeli],
     ['slast','Terakhir Terjual',s=>s.last_sold||''],
+    ['ssup','Supplier',s=>supplierSku(s.sku)],
+    ['ssup','Lama Kirim (hari)',s=>lamaKirim(s.sku)||''],
     ['sfinal','Final Order',(s,h)=>h.finalNum||0],
     ['smodal','Est. Modal',(s,h)=>h.modal],
     ['sjual','Est. Nilai Jual',(s,h)=>h.jual],
@@ -2025,14 +2070,15 @@ function _setUpdateBadge(d){
   if(st) st.textContent='☁️ Sinkron data...';
   _fbReady.then(async()=>{
     const db=_app.firestore();
-    const [stokR,exclR,pjR,infoR,modalR]=await Promise.allSettled([
+    const [stokR,exclR,pjR,infoR,modalR,finalR]=await Promise.allSettled([
       db.collection('settings').doc('stok_fisik').get(),
       db.collection('settings').doc('inv_excluded').get(),
       _peranAnalitik==='admin'?db.collection('penjualan').get():db.collection('penjualan_operator').get(),
       muatStokInfoCloud(db),
-      db.collection('settings').doc('modal_produk').get()
+      db.collection('settings').doc('modal_produk').get(),
+      muatFinalCloud(db)
     ]);
-    if(modalR.status==='fulfilled'&&modalR.value.exists){ MODAL_SM=modalR.value.data().m||{}; }
+    if(modalR.status==='fulfilled'&&modalR.value.exists){ const md=modalR.value.data(); MODAL_SM=md.m||{}; SUP_SKU=md.s||{}; SUP_INFO=md.sup||{}; isiFilterSupplier(); }
     if(infoR.status==='fulfilled'&&infoR.value){
       const inf=infoR.value;
       if(inf&&Object.keys(inf).length){ STOK_INFO=inf; try{ localStorage.setItem('stok_info',JSON.stringify(inf)); }catch(e){} }
