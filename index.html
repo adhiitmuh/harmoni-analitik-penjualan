@@ -448,6 +448,7 @@
           <option value="kosong_laku">🔥 Stok kosong &amp; laku</option>
           <option value="hampir_laku">⚠️ Hampir habis &amp; laku (&lt; 1 bln)</option>
           <option value="kosong">🔴 Stok kosong (semua)</option>
+          <option value="pindah">🚚 Toko kosong, gudang ada</option>
         </select>
         <select id="stokKatFilter" onchange="filterStok()">
           <option value="">Semua Kategori</option>
@@ -1645,6 +1646,10 @@ async function sinkronKeStokManager(jenis,map,info){
       const [nm,vr,kt,hb,hj]=inf, d={};
       if(!p||p[fStok]!==q) d[fStok]=q;
       if(hb>0&&(!p||!(p[fBeli]>0))) d[fBeli]=hb;           // modal dari Olsera hanya mengisi yang kosong
+      else if(p&&hb>0&&p[fBeli]>0){                         // modal Olsera naik >10% → tandai untuk dicek di Stok Manager
+        if(hb>p[fBeli]*1.1){ if(p.modal_baru_olsera!==hb){ d.modal_baru_olsera=hb; d.modal_naik_at=FV.serverTimestamp(); } }
+        else if(p.modal_baru_olsera) d.modal_baru_olsera=null;
+      }
       if(!p||!(p.lokasi||[]).includes(jenis)) d.lokasi=FV.arrayUnion(jenis);
       if(!p){ Object.assign(d,{sku:K,name:String(nm||'').toUpperCase(),category:kt||'',variant_names:vr||'',pos_sell_price:hj||0}); }
       else if(hj>0&&p.pos_sell_price!==hj) d.pos_sell_price=hj;
@@ -1791,6 +1796,7 @@ function filterStok(){
       if(tot<s.rek_qty)return false;
     }
     // Stok kosong: toko + gudang <= 0. "Laku" = masih terjual dalam rata-rata N bulan terakhir
+    if(beli==='pindah'&&!((STOK_TOKO[s.sku]||0)<=0&&(STOK_GUDANG[s.sku]||0)>0))return false;
     if(beli==='kosong'||beli==='kosong_laku'||beli==='hampir_laku'){
       const tot=(STOK_TOKO[s.sku]||0)+(STOK_GUDANG[s.sku]||0), laku=(+s.recent3_avg||0)>0;
       if(beli==='kosong'&&tot>0)return false;
@@ -1800,7 +1806,7 @@ function filterStok(){
     return true;
   });
   // Yang paling laku di atas
-  if(beli==='kosong_laku'||beli==='hampir_laku') d=d.slice().sort((a,b)=>(b.recent3_avg||0)-(a.recent3_avg||0)||b.total_qty-a.total_qty);
+  if(beli==='kosong_laku'||beli==='hampir_laku'||beli==='pindah') d=d.slice().sort((a,b)=>(b.recent3_avg||0)-(a.recent3_avg||0)||b.total_qty-a.total_qty);
   renderStok(d);
   updateTotalBudget();
 }
