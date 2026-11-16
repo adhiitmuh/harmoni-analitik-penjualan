@@ -1683,14 +1683,15 @@ async function sinkronKeStokManager(jenis,map,info){
     const lama={}; (await db.collection('products').get()).forEach(d=>{ lama[d.id]=d.data(); });
     const baru={}; Object.entries(map).forEach(([k,q])=>{ const K=String(k).trim().toUpperCase(); if(K) baru[K]=(baru[K]||0)+(Number(q)||0); });
     const infoUp={}; Object.entries(info).forEach(([k,v])=>{ infoUp[String(k).trim().toUpperCase()]=v; });
-    const tulis=[];
+    const tulis=[], riw=[], hariIni=new Date().toISOString().slice(0,10);
+    const catat=(K,p,nm,lm,br,status)=>riw.push({sku:K,nama:String((p&&p.name)||nm||'').toUpperCase(),lokasi:jenis,lama:lm,baru:br,sumber:'Olsera (upload Analitik)',status,oleh:_currentUserName||'',tgl:hariIni,at:FV.serverTimestamp()});
     Object.entries(baru).forEach(([K,q])=>{
       const p=lama[K], inf=infoUp[K]||[];
       const [nm,vr,kt,hb,hj]=inf, d={};
       if(!p||p[fStok]!==q) d[fStok]=q;
-      if(hb>0&&(!p||!(p[fBeli]>0))) d[fBeli]=hb;           // modal dari Olsera hanya mengisi yang kosong
-      else if(p&&hb>0&&p[fBeli]>0){                         // modal Olsera naik >10% → tandai untuk dicek di Stok Manager
-        if(hb>p[fBeli]*1.1){ if(p.modal_baru_olsera!==hb){ d.modal_baru_olsera=hb; d.modal_naik_at=FV.serverTimestamp(); } }
+      if(hb>0&&(!p||!(p[fBeli]>0))){ d[fBeli]=hb; if(p) catat(K,p,nm,0,hb,'diisi'); }   // modal dari Olsera hanya mengisi yang kosong
+      else if(p&&hb>0&&p[fBeli]>0){                         // modal Olsera berubah (naik/turun berapa pun) → tandai & catat riwayat, Owner yang memutuskan
+        if(hb!==p[fBeli]){ if(p.modal_baru_olsera!==hb){ d.modal_baru_olsera=hb; d.modal_baru_lama=p[fBeli]; d.modal_baru_lokasi=jenis; d.modal_naik_at=FV.serverTimestamp(); catat(K,p,nm,p[fBeli],hb,'terdeteksi'); } }
         else if(p.modal_baru_olsera) d.modal_baru_olsera=null;
       }
       if(!p||!(p.lokasi||[]).includes(jenis)) d.lokasi=FV.arrayUnion(jenis);
@@ -1701,6 +1702,7 @@ async function sinkronKeStokManager(jenis,map,info){
     // Produk yang tidak ada lagi di file lokasi ini → stoknya 0
     Object.entries(lama).forEach(([K,p])=>{ if(!(K in baru)&&(p.lokasi||[]).includes(jenis)&&(+p[fStok]||0)!==0) tulis.push([K,{[fStok]:0,updated_at:FV.serverTimestamp(),diperbarui_dari:'Analitik'}]); });
     for(let i=0;i<tulis.length;i+=400){ const b=db.batch(); tulis.slice(i,i+400).forEach(([K,d])=>b.set(db.collection('products').doc(K),d,{merge:true})); await b.commit(); }
+    for(let i=0;i<riw.length;i+=400){ const b=db.batch(); riw.slice(i,i+400).forEach(r=>b.set(db.collection('riwayat_modal').doc(),r)); await b.commit(); }
     return tulis.length;
   }catch(e){ console.error('Sinkron Stok Manager gagal:',e); return -1; }
 }
