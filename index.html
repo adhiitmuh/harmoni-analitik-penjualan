@@ -181,12 +181,14 @@
     <div style="position:relative;height:260px"><canvas id="cKatLine"></canvas></div>
   </div>
   <div class="card card-full">
-    <div class="card-title">📋 Ringkasan Total Per Kategori</div>
+    <div class="card-title">📋 Ringkasan Total Per Kategori <span style="font-size:.75rem;font-weight:400;color:#64748b">— klik nama kategori untuk melihat semua barangnya</span></div>
     <div class="table-wrap"><table>
-      <thead><tr><th>No</th><th>Kategori</th><th>Divisi</th><th class="tr">Total Omzet</th><th class="tr">Total HPP</th><th class="tr">Total Profit</th><th>Margin</th><th class="tr">Markup</th></tr></thead>
+      <thead><tr><th>No</th><th>Kategori</th><th>Divisi</th><th class="tr">Qty Terjual</th><th class="tr">Produk</th><th class="tr">Total Omzet</th><th class="tr">Total HPP</th><th class="tr">Total Profit</th><th>Margin</th><th class="tr">Markup</th></tr></thead>
       <tbody id="tbKat"></tbody>
       <tfoot><tr style="font-weight:700;background:#f8fafc">
         <td colspan="3" style="padding:10px 12px">GRAND TOTAL</td>
+        <td class="tr" id="gtQty" style="padding:10px 12px">—</td>
+        <td class="tr" id="gtProduk" style="padding:10px 12px">—</td>
         <td class="tr" id="gtOmzet" style="padding:10px 12px">—</td>
         <td class="tr" id="gtHpp" style="padding:10px 12px">—</td>
         <td class="tr" id="gtProfit" style="padding:10px 12px">—</td>
@@ -229,12 +231,13 @@
   </div>
   <div class="card card-full">
     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-      <span>📋 Top 50 Produk Terlaris</span>
+      <span id="topJudul">📋 Top 50 Produk Terlaris</span>
       <div class="filter-row" style="margin:0;gap:8px">
+        <input type="search" id="topCari" placeholder="🔍 Cari barang…" oninput="filterTopProduk()" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.82rem;min-width:140px">
         <select id="topKatFilter" onchange="filterTopProduk()">
           <option value="">Semua Kategori</option>
-          <option>CUSTOM</option><option>PERLENGKAPAN PNS</option><option>PERLENGKAPAN SEKOLAH</option><option>SERAGAM KARNAVAL</option><option>PERLENGKAPAN PASKIBRA</option><option>PERLENGKAPAN SECURITY</option><option>PERLENGKAPAN PRAMUKA</option><option>AKSESORIS</option><option>PERLENGKAPAN POLRI</option><option>PERLENGKAPAN TNI</option><option>PERLENGKAPAN POL PP</option><option>SEPATU PDH & PDL</option><option>PERLENGKAPAN PELAYARAN</option><option>PERL. TNI</option><option>PERL. PERBAKIN</option>
         </select>
+        <select id="topJumlah" onchange="filterTopProduk()"><option value="50">Tampilkan 50</option><option value="all">Tampilkan semua</option></select>
         <select id="topSortFilter" onchange="filterTopProduk()">
           <option value="omzet">Urutkan: Omzet</option>
           <option value="qty">Urutkan: Qty Terjual</option>
@@ -1453,28 +1456,42 @@ function renderTopProduk(fidx){
   cTopMargin.data.labels = topMar.map(p=>p.produk.length>20?p.produk.slice(0,20)+'…':p.produk);
   cTopMargin.data.datasets[0].data = topMar.map(p=>p.margin);
   cTopMargin.update();
-  const catFilter = document.getElementById('topKatFilter')?.value||'all';
-  let show = prodList;
-  if(catFilter!=='all') show = prodList.filter(p=>p.kategori===catFilter);
+  const selKat = document.getElementById('topKatFilter');
+  if(selKat){ const ada=[...new Set(TOP_PRODUK.map(p=>p.kategori).filter(Boolean))].sort(), pilih=selKat.value;
+    if(selKat.dataset.isi!==ada.join('|')){ selKat.innerHTML='<option value="">Semua Kategori</option>'+ada.map(k=>`<option value="${k.replace(/"/g,'&quot;')}">${k}</option>`).join(''); selKat.dataset.isi=ada.join('|'); selKat.value=ada.includes(pilih)?pilih:''; } }
+  const catFilter = selKat?.value||'all';
+  const sortBy = document.getElementById('topSortFilter')?.value||'omzet';
+  const cari = (document.getElementById('topCari')?.value||'').trim().toUpperCase();
+  const semua = document.getElementById('topJumlah')?.value==='all';
+  let show = [...prodList].sort((a,b)=>(b[sortBy]||0)-(a[sortBy]||0));
+  if(catFilter!=='all') show = show.filter(p=>p.kategori===catFilter);
+  if(cari) show = show.filter(p=>(p.produk+' '+(p.varian||'')).toUpperCase().includes(cari));
+  const jd=document.getElementById('topJudul'); if(jd) jd.textContent=`📋 ${semua?'Semua':'Top 50'} Produk${catFilter!=='all'?' · '+catFilter:''} — ${show.length} barang · ${show.reduce((t,p)=>t+p.qty,0).toLocaleString('id-ID')} pcs terjual`;
   const tb = document.getElementById('tbTop');
-  if(tb) tb.innerHTML = show.slice(0,50).map((p,i)=>`<tr><td class="tc">${i+1}</td><td><strong>${p.produk}</strong></td><td>${p.varian}</td><td><span class="badge-blue" style="font-size:.68rem">${p.kategori.replace('PERLENGKAPAN ','')}</span></td><td class="tr">${fmtRp(p.omzet)}</td><td class="tr" style="font-weight:600">${p.qty.toLocaleString('id-ID')}</td><td class="tr">${fmtRp(p.profit)}</td><td>${mBar(p.margin)}</td></tr>`).join('');
+  if(tb) tb.innerHTML = (semua?show:show.slice(0,50)).map((p,i)=>`<tr><td class="tc">${i+1}</td><td><strong>${p.produk}</strong></td><td>${p.varian}</td><td><span class="badge-blue" style="font-size:.68rem">${p.kategori.replace('PERLENGKAPAN ','')}</span></td><td class="tr">${fmtRp(p.omzet)}</td><td class="tr" style="font-weight:600">${p.qty.toLocaleString('id-ID')}</td><td class="tr">${fmtRp(p.profit)}</td><td>${mBar(p.margin)}</td></tr>`).join('');
 }
 
 function renderRingkasan(fKatOmzet, fKatProfit, fKatHpp){
   const tb = document.getElementById('tbKat');
   if(!tb) return;
+  // Qty terjual & jumlah produk per kategori (periode yang dipilih)
+  const fidx = (typeof FILTERED_IDX!=='undefined' && FILTERED_IDX.length) ? FILTERED_IDX : BULAN.map((_,i)=>i);
+  const katQty={}, katProd={};
+  TOP_PRODUK.forEach(p=>{ const q=fidx.reduce((s,i)=>s+(p.monthly_qty[i]||0),0); if(q<=0) return; katQty[p.kategori]=(katQty[p.kategori]||0)+q; katProd[p.kategori]=(katProd[p.kategori]||0)+1; });
   const rows = KAT_NAMES.map((nm,i)=>{
     const omzet=fKatOmzet[i], profit=fKatProfit[i], hpp=fKatHpp[i];
     const margin=omzet>0?profit/omzet*100:0;
     const markup=hpp>0?profit/hpp*100:null;
-    return {no:i+1,nama:nm,omzet,hpp:hpp||null,profit,margin,markup,divisi:KAT_DIVISI[i]};
+    return {no:i+1,nama:nm,omzet,hpp:hpp||null,profit,margin,markup,divisi:KAT_DIVISI[i],qty:katQty[nm]||0,nprod:katProd[nm]||0};
   }).filter(r=>r.omzet>0).sort((a,b)=>b.omzet-a.omzet).map((r,i)=>{r.no=i+1;return r;});
-  tb.innerHTML = rows.map(r=>`<tr><td class="tc">${r.no}</td><td><strong>${r.nama}</strong></td><td><span class="badge-blue">${namaDiv(r.divisi)||'—'}</span></td><td class="tr">${fmtRp(r.omzet)}</td><td class="tr">${r.hpp?fmtRp(r.hpp):'—'}</td><td class="tr">${fmtRp(r.profit)}</td><td>${mBar(r.margin)}</td><td class="tr">${r.markup?pct(r.markup):'—'}</td></tr>`).join('');
+  tb.innerHTML = rows.map(r=>`<tr><td class="tc">${r.no}</td><td><a href="#" onclick="lihatBarangKategori(this.dataset.k);return false" data-k="${r.nama.replace(/"/g,'&quot;')}" style="color:#034543"><strong>${r.nama}</strong></a></td><td><span class="badge-blue">${namaDiv(r.divisi)||'—'}</span></td><td class="tr" style="font-weight:700">${r.qty.toLocaleString('id-ID')}</td><td class="tr">${r.nprod}</td><td class="tr">${fmtRp(r.omzet)}</td><td class="tr">${r.hpp?fmtRp(r.hpp):'—'}</td><td class="tr">${fmtRp(r.profit)}</td><td>${mBar(r.margin)}</td><td class="tr">${r.markup?pct(r.markup):'—'}</td></tr>`).join('');
 
   const gtOmzet=fKatOmzet.reduce((s,v)=>s+v,0), gtProfit=fKatProfit.reduce((s,v)=>s+v,0), gtHpp=fKatHpp.reduce((s,v)=>s+v,0);
   const gtMargin=gtOmzet>0?gtProfit/gtOmzet*100:0, gtMarkup=gtHpp>0?gtProfit/gtHpp*100:0;
   const gById=id=>document.getElementById(id);
   if(gById('gtOmzet'))  gById('gtOmzet').textContent  = fmtRp(gtOmzet);
+  if(gById('gtQty'))    gById('gtQty').textContent    = Object.values(katQty).reduce((s,v)=>s+v,0).toLocaleString('id-ID');
+  if(gById('gtProduk')) gById('gtProduk').textContent = Object.values(katProd).reduce((s,v)=>s+v,0).toLocaleString('id-ID');
   if(gById('gtHpp'))    gById('gtHpp').textContent    = fmtRp(gtHpp);
   if(gById('gtProfit')) gById('gtProfit').textContent = fmtRp(gtProfit);
   if(gById('gtMargin')) gById('gtMargin').textContent = gtMargin.toFixed(1)+'%';
@@ -1504,6 +1521,14 @@ DIVISI_DATA.forEach(d=>{
   tbDiv.innerHTML+=`<tr><td><strong>${d.bulan}</strong></td><td class="tr">${fmtRp(d.yh_omzet)}</td><td class="tr">${fmtRp(d.yh_profit)}</td><td>${mBadge(d.yh_margin)}</td><td class="tr">${fmtRp(d.cust_omzet)}</td><td class="tr">${fmtRp(d.cust_omzet)}</td><td class="tr">${pct(d.kontr_yh)}</td><td class="tr">${pct(100-d.kontr_yh)}</td></tr>`;
 });
 
+function lihatBarangKategori(k){
+  const sel=document.getElementById('topKatFilter'); if(sel){ if(![...sel.options].some(o=>o.value===k)) sel.add(new Option(k,k)); sel.value=k; }
+  const j=document.getElementById('topJumlah'); if(j) j.value='all';
+  const so=document.getElementById('topSortFilter'); if(so) so.value='qty';
+  const c=document.getElementById('topCari'); if(c) c.value='';
+  showTab('produk', document.getElementById('nav-produk')); filterTopProduk();
+  setTimeout(()=>document.getElementById('tbTop')?.closest('.card')?.scrollIntoView({behavior:'smooth'}),100);
+}
 function filterTopProduk(){
   renderTopProduk(FILTERED_IDX);
 }
