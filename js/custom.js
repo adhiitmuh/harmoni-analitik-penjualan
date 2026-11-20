@@ -40,15 +40,20 @@
       const hi = a.findIndex(r => r.some(c => /^item$|nama item|item name/i.test(String(c).trim())) && r.some(c => /qty|jumlah/i.test(String(c))))
       if (hi < 0) continue
       const H = a[hi].map(c => String(c).replace(/\s+/g, ' ').trim().toLowerCase())
-      const kol = (...re) => { for (const r of re) { const i = H.findIndex(h => r.test(h)); if (i >= 0) return i } return -1 }
-      const K = { no: kol(/no\.? ?pesanan|order no|no\.? ?order|no\.? ?struk/), tgl: kol(/tanggal/, /date/), plg: kol(/pelanggan/, /customer/), oleh: kol(/penjualan oleh|oleh|sales|served/),
-        item: kol(/^item$/, /nama item|item name/), qty: kol(/^qty$/, /qty/, /jumlah/), unit: kol(/unit|satuan/), total: kol(/total pesanan/, /^total/, /subtotal/), modal: kol(/modal/, /cost/) }
+      // Nama kolom persis dulu (Excel Olsera: item name, item uom, amount, total cost, item group…), baru pola longgar
+      const kol = (persis, ...re) => { for (const n of persis) { const i = H.indexOf(n); if (i >= 0) return i } for (const r of re) { const i = H.findIndex(h => r.test(h)); if (i >= 0) return i } return -1 }
+      const K = { no: kol(['order no', 'no. pesanan', 'no pesanan'], /no\.? ?pesanan|order no|no\.? ?struk/), tgl: kol(['order date', 'tanggal jual', 'tanggal'], /tanggal/, /date/),
+        plg: kol(['customer name', 'pelanggan'], /pelanggan/), oleh: kol(['sales name', 'serve by', 'penjualan oleh'], /penjualan oleh/),
+        item: kol(['item name', 'item', 'nama item'], /^item$/), qty: kol(['qty', 'jumlah'], /^qty$/),
+        unit: kol(['item uom', 'uom', 'unit pengukuran', 'satuan'], /^unit pengukuran|^satuan/), total: kol(['amount', 'total pesanan', 'subtotal', 'total'], /^total pesanan/),
+        modal: kol(['total cost', 'modal produk', 'modal', 'cost perunit'], /^modal/), grup: kol(['item group', 'kategori'], /group/), sumber: kol(['order source'], /order source/) }
       if (K.item < 0 || K.qty < 0) continue
       const rows = []
       for (const r of a.slice(hi + 1)) {
         const item = String(r[K.item] || '').replace(/\s+/g, ' ').trim(); if (!item) continue
         rows.push({ no: String(r[K.no] ?? '').trim(), tgl: tglIso(r[K.tgl]), plg: String(r[K.plg] ?? '').trim(), oleh: String(r[K.oleh] ?? '').trim(), item,
-          qty: angka(r[K.qty]), unit: K.unit >= 0 ? String(r[K.unit] ?? '').trim() : '', total: angka(r[K.total]), modal: K.modal >= 0 ? angka(r[K.modal]) : 0 })
+          qty: angka(r[K.qty]), unit: K.unit >= 0 ? String(r[K.unit] ?? '').trim() : '', total: angka(r[K.total]), modal: K.modal >= 0 ? angka(r[K.modal]) : 0,
+          grup: K.grup >= 0 ? String(r[K.grup] ?? '').trim().toUpperCase() : '', sumber: K.sumber >= 0 ? String(r[K.sumber] ?? '').trim().toUpperCase() : '' })
       }
       return rows
     }
@@ -99,10 +104,10 @@
       const x = B[b] = B[b] || { rows: [], omzet: 0, baris: 0, kanal: {}, itemKanal: {} }
       x.omzet += r.total || 0; x.baris++
       // Sumber pesanan dari nomor order Olsera (SP… = Shopee, INV… = Tokopedia, lainnya = kasir toko)
-      const kn = kanalDari(r.no), k = x.kanal[kn] = x.kanal[kn] || { omzet: 0, qty: 0, struk: new Set() }
+      const kn = r.sumber ? (/SHOPEE/.test(r.sumber) ? 'Shopee' : /TOKOPEDIA/.test(r.sumber) ? 'Tokopedia' : /TIKTOK/.test(r.sumber) ? 'TikTok' : /POINT OF SALE|POS/.test(r.sumber) ? 'Toko' : r.sumber.charAt(0) + r.sumber.slice(1).toLowerCase()) : kanalDari(r.no), k = x.kanal[kn] = x.kanal[kn] || { omzet: 0, qty: 0, struk: new Set() }
       k.omzet += r.total || 0; k.qty += r.qty || 0; if (r.no) k.struk.add(r.no)
       if (kn !== 'Toko') { const ik = x.itemKanal[kn] = x.itemKanal[kn] || {}, nm = String(r.item || '').toUpperCase().replace(/\s+/g, ' ').trim(), e = ik[nm] = ik[nm] || { i: nm, q: 0, r: 0 }; e.q += r.qty || 0; e.r += r.total || 0 }
-      if (!r.unit && !(r.modal > 0) && r.item) x.rows.push({ t: r.tgl, no: r.no, k: r.oleh, p: r.plg, i: r.item, j: jenisDari(r.item), q: r.qty || 0, r: r.total || 0 }) })
+      if (r.item && (r.grup ? r.grup === 'CUSTOM' : (!r.unit && !(r.modal > 0)))) x.rows.push({ t: r.tgl, no: r.no, k: r.oleh, p: r.plg, i: r.item, j: jenisDari(r.item), q: r.qty || 0, r: r.total || 0 }) })
     return B
   }
 
