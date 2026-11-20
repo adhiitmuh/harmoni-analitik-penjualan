@@ -10,7 +10,11 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
   const rp = n => 'Rp ' + Math.round(n || 0).toLocaleString('id-ID')
   const angka = v => { if (typeof v === 'number') return v; const s = String(v ?? '').replace(/IDR|Rp/gi, '').trim(); const neg = /^-|\(.*\)/.test(s); const d = s.replace(/[^\d,]/g, '').replace(',', '.'); return (neg ? -1 : 1) * (parseFloat(d) || 0) }
-  const jenisDari = nama => { const n = String(nama || '').toUpperCase().replace(/\s+/g, ' ').trim(); const m = n.match(/\(([^()]+)\)\s*$/); return (m ? m[1] : n).trim() }
+  // Isi kurung yang hanya ukuran (42, 15, XL, S-M…) bukan jenis → pakai nama di depan kurung
+  const UKURAN = /^(\d{1,3}([.,]\d)?|[SML]|XS|XL|XXL|XXXL|\d?XL|ALL ?SIZE|[SML]\s*-\s*[SML]|NO\.?\s*\d+)$/
+  const jenisDari = nama => { const n = String(nama || '').toUpperCase().replace(/\s+/g, ' ').trim(); const m = n.match(/\(([^()]+)\)\s*$/)
+    if (m && !UKURAN.test(m[1].trim())) return m[1].trim()
+    return (m ? n.slice(0, m.index) : n).trim() || n }
   // Kelompok besar (kata kunci) untuk ringkasan
   const KELOMPOK = [
     ['Papan nama', /\bUS\b|\bKL\b|KACA LAPIS|P\/HH|PRA\/HH|H\/|PAPAN|NAMA DADA|NAME ?TAG/],
@@ -139,6 +143,8 @@
     try { await _fbReady; const db = _app.firestore()
       if (_OUTLET) (await db.collection('outlet_custom').where('outlet', '==', _OUTLET).get()).forEach(d => { DATA[d.data().bulan || d.id.split('__').pop()] = d.data() })
       else (await db.collection('penjualan_custom').get()).forEach(d => { DATA[d.id] = d.data() })
+      // Jenis dihitung ulang saat dimuat (aturan jenis bisa diperbaiki tanpa upload ulang)
+      Object.values(DATA).forEach(d => (d.rows || []).forEach(r => { r.j = jenisDari(r.i) }))
       try { const k = await db.collection('settings').doc('custom_stok').get(); KATA_STOK = k.exists ? (k.data().kata || []) : [] } catch (e) { KATA_STOK = [] } }
     catch (e) { console.warn('penjualan_custom', e); document.getElementById('cuStatus').textContent = '⚠️ Data custom gagal dimuat: ' + (e.code === 'permission-denied' ? 'akun ini tidak punya akses' : e.message) }
     return DATA
@@ -190,6 +196,7 @@
       const ramai = Object.entries(j.bln).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([b]) => labelBln(b)).join(', ')
       return `<tr><td>${i + 1}</td><td style="white-space:normal;min-width:220px"><b>${esc(k)}</b>${k !== j.contoh.toUpperCase() ? `<div style="font-size:.7rem;color:#64748b">cth: ${esc(j.contoh)}</div>` : ''}</td><td>${esc(j.g)}</td><td class="r">${j.q.toLocaleString('id-ID')}</td><td class="r">${rp(j.r)}</td><td class="r">${j.n}</td><td>${esc(ramai)}</td></tr>` }).join('')
       + (jl.length > 200 ? `<tr><td colspan="7" style="color:#64748b">… ${jl.length - 200} jenis lain — persempit dengan cari / kelompok, atau unduh Excel</td></tr>` : '')
+    renderTahun()
     // Detail
     const det = rows.slice().sort((a, b) => String(b.t).localeCompare(String(a.t)))
     document.getElementById('cuDetailN').textContent = `${det.length.toLocaleString('id-ID')} baris`
@@ -256,6 +263,43 @@
     try { await _app.firestore().collection('settings').doc('custom_stok').set({ kata, updated_at: firebase.firestore.FieldValue.serverTimestamp(), updated_by: _currentUserName || '' }); KATA_STOK = kata; renderStokCustom(); alert('✅ Kata kunci custom yang distok disimpan') }
     catch (e) { alert('Gagal: ' + e.message) }
   }
+  // ── Perbandingan per tahun (abaikan pilihan periode; ikut cari & kelompok) ──
+  function renderTahun() {
+    const box = document.getElementById('cuThn'); if (!box || !DATA) return
+    const q = document.getElementById('cuCari').value.trim().toUpperCase(), kel = document.getElementById('cuKelompok').value
+    const ukur = document.getElementById('cuThnUkur').value, ytd = document.getElementById('cuThnYtd').checked, urut = document.getElementById('cuThnUrut').value
+    const semuaBln = Object.keys(DATA).sort(), tahun = [...new Set(semuaBln.map(b => b.slice(0, 4)))]
+    if (tahun.length < 2) { box.innerHTML = '<p style="font-size:.78rem;color:#64748b">Perlu data minimal 2 tahun untuk dibandingkan.</p>'; return }
+    const thnAkhir = tahun[tahun.length - 1], blnAkhir = semuaBln.filter(b => b.startsWith(thnAkhir)).map(b => +b.slice(5))
+    const batas = ytd ? Math.max(...blnAkhir) : 12
+    const nilai = { omzet: r => r.r || 0, qty: r => r.q || 0, struk: () => 0 }[ukur]
+    // agregasi: [tahun][bulan], [tahun][kelompok], [tahun][jenis]; struk dihitung unik
+    const M = {}, G = {}, J = {}, SM = {}, SG = {}, SJ = {}
+    semuaBln.forEach(b => { const t = b.slice(0, 4), m = +b.slice(5); if (m > batas) return
+      ;(DATA[b].rows || []).forEach(r => { const g = kelompokDari(r.i, r.j); if ((q && !(r.i + ' ' + r.j).toUpperCase().includes(q)) || (kel && g !== kel)) return
+        const v = nilai(r); const add = (O, a, k) => { (O[a] = O[a] || {})[k] = (O[a][k] || 0) + v }; add(M, t, m); add(G, t, g); add(J, t, r.j)
+        if (ukur === 'struk') { const s2 = (O, a, k) => { ((O[a] = O[a] || {})[k] = O[a][k] || new Set()).add(r.no) }; s2(SM, t, m); s2(SG, t, g); s2(SJ, t, r.j) } }) })
+    const ambil = (O, S, t, k) => ukur === 'struk' ? (S[t]?.[k]?.size || 0) : (O[t]?.[k] || 0)
+    const fmt = v => ukur === 'omzet' ? rpJtC(v) : Math.round(v).toLocaleString('id-ID')
+    const t1 = tahun[tahun.length - 2], t2 = thnAkhir
+    const delta = (a, b) => a ? `<span style="font-weight:700;color:${b >= a ? '#166534' : '#b91c1c'}">${b >= a ? '▲' : '▼'} ${Math.abs(Math.round((b - a) / a * 100))}%</span>` : (b ? '<span style="color:#166534;font-weight:700">baru</span>' : '—')
+    const kolTh = tahun.map(t => `<th class="r">${t}${t === thnAkhir && ytd ? '' : ''}</th>`).join('')
+    const total = t => { let s3 = 0; for (let m = 1; m <= batas; m++) s3 += ambil(M, SM, t, m); return s3 }
+    const NB = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+    let html = `<p style="font-size:.74rem;color:#475569;margin-bottom:6px">${ytd ? `Dibandingkan sampai bulan yang sama: <b>Jan–${NB[batas]}</b> tiap tahun.` : 'Semua bulan tiap tahun.'} Perubahan = ${t2} dibanding ${t1}.</p>
+      <div class="cu-grid"><div><div class="cu-scroll"><table><tr><th>Bulan</th>${kolTh}<th class="r">${t2} vs ${t1}</th></tr>`
+    for (let m = 1; m <= batas; m++) html += `<tr><td>${NB[m]}</td>${tahun.map(t => `<td class="r">${fmt(ambil(M, SM, t, m))}</td>`).join('')}<td class="r">${delta(ambil(M, SM, t1, m), ambil(M, SM, t2, m))}</td></tr>`
+    html += `<tr style="font-weight:700;background:#f8fafc"><td>Total</td>${tahun.map(t => `<td class="r">${fmt(total(t))}</td>`).join('')}<td class="r">${delta(total(t1), total(t2))}</td></tr></table></div></div>`
+    const kels = [...new Set(tahun.flatMap(t => Object.keys(G[t] || {})))].sort((a, b) => ambil(G, SG, t2, b) - ambil(G, SG, t2, a))
+    html += `<div><div class="cu-scroll"><table><tr><th>Kelompok</th>${kolTh}<th class="r">${t2} vs ${t1}</th></tr>${kels.map(g => `<tr><td>${esc(g)}</td>${tahun.map(t => `<td class="r">${fmt(ambil(G, SG, t, g))}</td>`).join('')}<td class="r">${delta(ambil(G, SG, t1, g), ambil(G, SG, t2, g))}</td></tr>`).join('')}</table></div></div></div>`
+    const js = [...new Set([...Object.keys(J[t1] || {}), ...Object.keys(J[t2] || {})])].map(j => ({ j, a: ambil(J, SJ, t1, j), b: ambil(J, SJ, t2, j) })).map(x => ({ ...x, d: x.b - x.a }))
+    const list = js.sort((x, y) => urut === 'naik' ? y.d - x.d : urut === 'turun' ? x.d - y.d : y.b - x.b).slice(0, 50)
+    html += `<div style="margin-top:12px;font-size:.78rem;font-weight:700">Jenis custom — ${urut === 'naik' ? 'paling naik' : urut === 'turun' ? 'paling turun' : 'terbesar ' + t2} (${t1} vs ${t2})</div>
+      <div class="cu-scroll"><table><tr><th>#</th><th>Jenis</th><th class="r">${t1}</th><th class="r">${t2}</th><th class="r">Selisih</th><th class="r">Perubahan</th></tr>${list.map((x, i) => `<tr><td>${i + 1}</td><td style="white-space:normal;min-width:200px">${esc(x.j)}</td><td class="r">${fmt(x.a)}</td><td class="r">${fmt(x.b)}</td><td class="r" style="color:${x.d >= 0 ? '#166534' : '#b91c1c'}">${x.d >= 0 ? '+' : '−'}${fmt(Math.abs(x.d))}</td><td class="r">${delta(x.a, x.b)}</td></tr>`).join('')}</table></div>`
+    box.innerHTML = html
+  }
+  const rpJtC = n => Math.abs(n) >= 1e6 ? 'Rp ' + (n / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' jt' : rp(n)
+  window.cuRenderTahun = () => renderTahun()
   window.cuPilihKelompok = k => { document.getElementById('cuKelompok').value = k; render() }
   window.cuRender = () => render()
   window.cuExcel = () => {
@@ -344,6 +388,13 @@
         <div class="card"><div class="card-title">📅 Per bulan</div><div class="cu-scroll"><table id="cuBulan"></table></div></div>
         <div class="card"><div class="card-title">🗂️ Per kelompok</div><div class="cu-scroll"><table id="cuKel"></table></div></div>
       </div>
+      <div class="card"><div class="card-title">📅 Perbandingan per tahun
+        <span style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-weight:500">
+          <select id="cuThnUkur" onchange="cuRenderTahun()" style="font-size:.75rem;padding:4px 8px;border-radius:8px;border:1.5px solid rgba(3,69,67,.2)"><option value="omzet">Omzet</option><option value="qty">Qty</option><option value="struk">Jumlah struk</option></select>
+          <select id="cuThnUrut" onchange="cuRenderTahun()" style="font-size:.75rem;padding:4px 8px;border-radius:8px;border:1.5px solid rgba(3,69,67,.2)"><option value="naik">Jenis paling naik</option><option value="turun">Jenis paling turun</option><option value="besar">Jenis terbesar</option></select>
+          <label style="font-size:.72rem;display:flex;gap:4px;align-items:center;color:#475569"><input type="checkbox" id="cuThnYtd" checked onchange="cuRenderTahun()" style="width:auto"> sampai bulan yang sama</label></span></div>
+        <p style="font-size:.72rem;color:#64748b;margin-bottom:6px">Ikut filter kelompok & pencarian di atas (periode diabaikan).</p>
+        <div id="cuThn"></div></div>
       <div class="card"><div class="card-title">🏆 Jenis custom <span id="cuJenisN" style="font-size:.72rem;color:#64748b;font-weight:500"></span>
         <select id="cuUrut" onchange="cuRender()" style="font-size:.75rem;padding:4px 8px;border-radius:8px;border:1.5px solid rgba(3,69,67,.2)"><option value="omzet">Omzet terbesar</option><option value="qty">Qty terbanyak</option><option value="n">Paling sering</option></select></div>
         <div class="cu-scroll"><table id="cuJenis"></table></div></div>
