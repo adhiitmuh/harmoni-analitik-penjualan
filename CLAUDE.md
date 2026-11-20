@@ -21,5 +21,6 @@ Di sandbox CDN Chart.js tidak termuat → skrip berhenti di bagian grafik; uji f
 ## Barang Custom (`js/custom.js`, tab 🧵 Owner/Admin)
 - Upload laporan Olsera **Item Penjualan berdasarkan Tanggal** (Excel; PDF juga dibaca lewat pdf.js — posisi kolom tetap). Item custom = Unit kosong & Modal 0 (nama diketik kasir). Jenis = teks dalam kurung di akhir nama.
 - Simpan `penjualan_custom/{YYYY-MM}` {rows:[{t,no,k,p,i,j,q,r}], semua:{omzet,baris}} (Owner/Admin) + `penjualan_custom_ringkas/{YYYY-MM}` {j:[{k,q}]} untuk Stok Manager (kebutuhan bahan custom di Daftar Belanja). Upload ulang bulan sama = ganti.
+- Upload boleh ZIP (JSZip). Dokumen bulan juga menyimpan `kanal` {Toko|Shopee|Tokopedia|TikTok: {omzet,qty,struk}} & `topKanal` (200 barang teratas per marketplace) dari prefiks no. pesanan (SP… Shopee, INV… Tokopedia) → tab 🛍️ Toko vs Shopee. Baris "Custom" di Top Produk bisa diklik → tab 🧵 periode sama.
 - Top Produk punya kolom Stok Toko/Gudang (jumlah SKU produk+varian dari `settings/stok_fisik`).
 

@@ -92,11 +92,16 @@
   }
 
   // Kelompokkan per bulan → dokumen yang disimpan
+  const kanalDari = no => /^SP/i.test(String(no || '').trim()) ? 'Shopee' : /^INV/i.test(String(no || '').trim()) ? 'Tokopedia' : /^(TT|TIKTOK)/i.test(String(no || '').trim()) ? 'TikTok' : 'Toko'
   function perBulan(rows) {
     const B = {}
     rows.forEach(r => { const b = (r.tgl || '').slice(0, 7); if (!/^\d{4}-\d{2}$/.test(b)) return
-      const x = B[b] = B[b] || { rows: [], omzet: 0, baris: 0 }
+      const x = B[b] = B[b] || { rows: [], omzet: 0, baris: 0, kanal: {}, itemKanal: {} }
       x.omzet += r.total || 0; x.baris++
+      // Sumber pesanan dari nomor order Olsera (SP… = Shopee, INV… = Tokopedia, lainnya = kasir toko)
+      const kn = kanalDari(r.no), k = x.kanal[kn] = x.kanal[kn] || { omzet: 0, qty: 0, struk: new Set() }
+      k.omzet += r.total || 0; k.qty += r.qty || 0; if (r.no) k.struk.add(r.no)
+      if (kn !== 'Toko') { const ik = x.itemKanal[kn] = x.itemKanal[kn] || {}, nm = String(r.item || '').toUpperCase().replace(/\s+/g, ' ').trim(), e = ik[nm] = ik[nm] || { i: nm, q: 0, r: 0 }; e.q += r.qty || 0; e.r += r.total || 0 }
       if (!r.unit && !(r.modal > 0) && r.item) x.rows.push({ t: r.tgl, no: r.no, k: r.oleh, p: r.plg, i: r.item, j: jenisDari(r.item), q: r.qty || 0, r: r.total || 0 }) })
     return B
   }
@@ -107,7 +112,9 @@
       let rows = x.rows
       if (JSON.stringify(rows).length > 900000) rows = rows.map(({ p, ...s }) => s)   // batas 1 MB dokumen: buang nama pelanggan
       const ring = {}; rows.forEach(r => { ring[r.j] = (ring[r.j] || 0) + (r.q || 0) })
-      await db.collection('penjualan_custom').doc(b).set({ rows, semua: { omzet: x.omzet, baris: x.baris }, sumber: nama, updated_at: now, updated_by: _currentUserName || '' })
+      const kanal = {}; Object.entries(x.kanal).forEach(([k, v]) => { kanal[k] = { omzet: v.omzet, qty: v.qty, struk: v.struk.size } })
+      const topKanal = {}; Object.entries(x.itemKanal).forEach(([k, m]) => { topKanal[k] = Object.values(m).sort((a, c) => c.r - a.r).slice(0, 200) })
+      await db.collection('penjualan_custom').doc(b).set({ rows, semua: { omzet: x.omzet, baris: x.baris }, kanal, topKanal, sumber: nama, updated_at: now, updated_by: _currentUserName || '' })
       await db.collection('penjualan_custom_ringkas').doc(b).set({ j: Object.entries(ring).map(([k, q]) => ({ k, q })), updated_at: now })
     }
   }
@@ -186,6 +193,31 @@
     const ada = DARI_TOP ? DARI_TOP.filter(b => DATA[b]).length : 0
     const st = document.getElementById('cuStatus'); if (DARI_TOP && ada < DARI_TOP.length) st.textContent = `ℹ️ Rincian custom tersedia untuk ${ada} dari ${DARI_TOP.length} bulan periode ini — upload laporan Item Penjualan bulan lainnya.`
   }
+  // ── Toko vs Shopee / marketplace ──
+  function renderKanal() {
+    if (!DATA) return
+    const sel = document.getElementById('knPeriode'), v = sel.value, semuaBln = Object.keys(DATA).sort(), adaKanal = semuaBln.filter(b => DATA[b].kanal)
+    const thn = [...new Set(adaKanal.map(b => b.slice(0, 4)))]
+    sel.innerHTML = '<option value="">Semua bulan</option>' + thn.map(t => `<option value="${t}">Tahun ${t}</option>`).join('') + adaKanal.slice().reverse().map(b => `<option value="${b}">${labelBln(b)}</option>`).join('')
+    if ([...sel.options].some(o => o.value === v)) sel.value = v
+    const lama = semuaBln.filter(b => !DATA[b].kanal)
+    document.getElementById('knInfo').innerHTML = !adaKanal.length ? 'Belum ada data. Upload laporan Olsera <b>Item Penjualan berdasarkan Tanggal</b> di tab 🧵 Barang Custom (sekali upload untuk dua tab ini).'
+      : `Sumber dari nomor pesanan Olsera (SP… = Shopee, INV… = Tokopedia). Nilai = harga barang di Olsera (sebelum potongan marketplace).${lama.length ? ` <b style="color:#b45309">Bulan ${lama.map(labelBln).join(', ')} di-upload sebelum fitur ini — upload ulang supaya ikut terpisah.</b>` : ''}`
+    document.getElementById('knIsi').style.display = adaKanal.length ? '' : 'none'; if (!adaKanal.length) return
+    const bln = adaKanal.filter(b => !sel.value || b.startsWith(sel.value))
+    const KAN = [...new Set(bln.flatMap(b => Object.keys(DATA[b].kanal)))].sort((a, b) => a === 'Toko' ? -1 : b === 'Toko' ? 1 : a.localeCompare(b))
+    const tot = {}; KAN.forEach(k => tot[k] = { omzet: 0, qty: 0, struk: 0 }); bln.forEach(b => KAN.forEach(k => { const x = DATA[b].kanal[k]; if (x) { tot[k].omzet += x.omzet; tot[k].qty += x.qty; tot[k].struk += x.struk } }))
+    const semua = KAN.reduce((t, k) => t + tot[k].omzet, 0), ikon = k => k === 'Toko' ? '🏪' : k === 'Shopee' ? '🛍️' : '🛒'
+    document.getElementById('knKartu').innerHTML = KAN.map(k => `<div class="kpi-card"><div class="kpi-label">${ikon(k)} ${esc(k)}</div><div class="kpi-value" style="font-size:1.1rem">${rp(tot[k].omzet)}</div><div class="kpi-sub">${semua ? (100 * tot[k].omzet / semua).toFixed(1) + '% · ' : ''}${tot[k].struk.toLocaleString('id-ID')} pesanan · ${tot[k].qty.toLocaleString('id-ID')} pcs</div></div>`).join('')
+    document.getElementById('knBulan').innerHTML = `<tr><th>Bulan</th>${KAN.map(k => `<th class="r">${esc(k)}</th>`).join('')}<th class="r">% marketplace</th></tr>` + bln.map(b => { const kn = DATA[b].kanal, t = KAN.reduce((s2, k) => s2 + (kn[k]?.omzet || 0), 0), mp = t - (kn.Toko?.omzet || 0)
+      return `<tr><td>${labelBln(b)}</td>${KAN.map(k => `<td class="r">${kn[k] ? rp(kn[k].omzet) + `<div style="font-size:.66rem;color:#64748b">${kn[k].struk} pesanan</div>` : '—'}</td>`).join('')}<td class="r">${t ? (100 * mp / t).toFixed(1) + '%' : '—'}</td></tr>` }).join('')
+    const mk = KAN.filter(k => k !== 'Toko'), pilih = document.getElementById('knKanal'), pv = pilih.value
+    pilih.innerHTML = mk.map(k => `<option>${esc(k)}</option>`).join(''); if (mk.includes(pv)) pilih.value = pv
+    const kk = pilih.value, M = {}; bln.forEach(b => (DATA[b].topKanal?.[kk] || []).forEach(e => { const x = M[e.i] = M[e.i] || { i: e.i, q: 0, r: 0 }; x.q += e.q; x.r += e.r }))
+    const urut = document.getElementById('knUrut').value, top = Object.values(M).sort((a, c) => urut === 'qty' ? c.q - a.q : c.r - a.r)
+    document.getElementById('knTop').innerHTML = '<tr><th>#</th><th>Barang</th><th class="r">Qty</th><th class="r">Nilai</th></tr>' + (top.length ? top.slice(0, 100).map((x, i) => `<tr><td>${i + 1}</td><td style="white-space:normal;min-width:200px">${esc(x.i)}</td><td class="r">${x.q.toLocaleString('id-ID')}</td><td class="r">${rp(x.r)}</td></tr>`).join('') : '<tr><td colspan="4" style="color:#64748b">Tidak ada penjualan marketplace di periode ini</td></tr>')
+  }
+  window.knRender = () => renderKanal()
   window.cuPilihKelompok = k => { document.getElementById('cuKelompok').value = k; render() }
   window.cuRender = () => render()
   window.cuExcel = () => {
@@ -198,12 +230,29 @@
     tambah(rows.map(r => ({ Tanggal: r.t, 'No. Struk': r.no, Kasir: r.k, Pelanggan: r.p || '', 'Item (diketik kasir)': r.i, Jenis: r.j, Kelompok: r.g, Qty: r.q, Omzet: r.r })), 'Semua Item', [11, 20, 10, 20, 55, 30, 18, 7, 12])
     XLSX.writeFile(wb, 'Barang_Custom_Harmoni.xlsx')
   }
+  // Folder yang di-compress (ZIP) → file .xlsx/.pdf di dalamnya
+  async function bukaZip(list, st) {
+    if (!list.some(f => /\.zip$/i.test(f.name))) return list
+    if (typeof JSZip === 'undefined') { st.textContent = '⏳ Memuat pembuka ZIP...'
+      await new Promise((ok, gagal) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'; sc.onload = ok; sc.onerror = () => gagal(new Error('Gagal memuat pembuka ZIP — cek internet')); document.head.appendChild(sc) }) }
+    const hasil = list.filter(f => !/\.zip$/i.test(f.name))
+    for (const z of list.filter(f => /\.zip$/i.test(f.name))) {
+      st.textContent = '⏳ Membuka ' + z.name + '...'
+      const arsip = await JSZip.loadAsync(await z.arrayBuffer())
+      for (const e of Object.values(arsip.files)) { const nama = e.name.split('/').pop()
+        if (e.dir || e.name.includes('__MACOSX') || nama.startsWith('.') || !/\.(xlsx|xls|pdf)$/i.test(nama)) continue
+        hasil.push(new File([await e.async('blob')], nama)) }
+    }
+    if (!hasil.length) throw new Error('Tidak ada file Excel/PDF di dalam ZIP')
+    return hasil
+  }
   window.cuUpload = async files => {
     const st = document.getElementById('cuStatus'); if (!files || !files.length) return
     try {
       if (_peranAnalitik !== 'admin') throw new Error('Upload hanya untuk Owner/Admin')
       if (typeof XLSX === 'undefined') throw new Error('Pembaca Excel belum termuat — muat ulang halaman')
       const semua = []
+      files = await bukaZip([...files], st)
       for (const f of files) {
         st.textContent = `⏳ Membaca ${f.name}...`
         const buf = await f.arrayBuffer()
@@ -236,8 +285,8 @@
     </style>
     <div class="card">
       <div class="card-title">🧵 Barang Custom (nama diketik kasir di Olsera)</div>
-      <p style="font-size:.78rem;color:#475569;margin-bottom:10px">Upload laporan Olsera <b>Laporan → Item Penjualan berdasarkan Tanggal</b> (Excel, atau PDF), boleh beberapa bulan sekaligus. Item tanpa satuan & tanpa modal dianggap custom. Upload ulang bulan yang sama akan mengganti datanya. Ringkasan qty per jenis ikut terkirim ke <b>Stok Manager</b> untuk menghitung kebutuhan bahan di Daftar Belanja.</p>
-      <label class="pbtn active" style="cursor:pointer;display:inline-block">📤 Upload Item Penjualan<input type="file" id="cuFile" accept=".xlsx,.xls,.pdf" multiple style="display:none" onchange="cuUpload(this.files)"></label>
+      <p style="font-size:.78rem;color:#475569;margin-bottom:10px">Upload laporan Olsera <b>Laporan → Item Penjualan berdasarkan Tanggal</b> (Excel atau PDF), boleh beberapa bulan sekaligus atau satu file ZIP berisi banyak file. Item tanpa satuan & tanpa modal dianggap custom. Upload ulang bulan yang sama akan mengganti datanya. Ringkasan qty per jenis ikut terkirim ke <b>Stok Manager</b> untuk menghitung kebutuhan bahan di Daftar Belanja.</p>
+      <label class="pbtn active" style="cursor:pointer;display:inline-block">📤 Upload Item Penjualan<input type="file" id="cuFile" accept=".xlsx,.xls,.pdf,.zip" multiple style="display:none" onchange="cuUpload(this.files)"></label>
       <span id="cuStatus" style="font-size:.75rem;color:#64748b;margin-left:8px"></span>
     </div>
     <div id="cuKosong" class="card" style="display:none;color:#64748b;font-size:.85rem">Belum ada data barang custom. Upload laporan Item Penjualan di atas.</div>
@@ -259,9 +308,24 @@
       <div class="card"><div class="card-title">📋 Rincian item <span id="cuDetailN" style="font-size:.72rem;color:#64748b;font-weight:500"></span></div><div class="cu-scroll"><table id="cuDetail"></table></div></div>
     </div>`
     main.appendChild(tab)
+    const btn2 = document.createElement('button'); btn2.id = 'nav-kanal'; btn2.className = 'nav-btn'; btn2.style.display = 'none'; btn2.textContent = '🛍️ Toko vs Shopee'
+    btn2.onclick = function () { showTab('kanal', this) }
+    nav.appendChild(btn2)
+    const tab2 = document.createElement('div'); tab2.id = 'tab-kanal'; tab2.className = 'tab-content'
+    tab2.innerHTML = `<style>#tab-kanal table{width:100%;border-collapse:collapse;font-size:.78rem} #tab-kanal th{text-align:left;font-size:.68rem;color:#64748b;padding:6px 8px;border-bottom:2px solid rgba(3,69,67,.1);white-space:nowrap;position:sticky;top:0;background:#fff}
+      #tab-kanal td{padding:6px 8px;border-bottom:1px solid rgba(3,69,67,.06);white-space:nowrap;vertical-align:top} #tab-kanal .r{text-align:right} #tab-kanal select{padding:6px 10px;border-radius:8px;border:1.5px solid rgba(3,69,67,.2);font-size:.8rem}</style>
+    <div class="card"><div class="card-title">🛍️ Penjualan Toko vs Shopee / marketplace</div><p id="knInfo" style="font-size:.78rem;color:#475569"></p>
+      <div style="margin-top:8px"><select id="knPeriode" onchange="knRender()"></select></div></div>
+    <div id="knIsi" style="display:none">
+      <div class="kpi-grid" id="knKartu"></div>
+      <div class="card"><div class="card-title">📅 Per bulan</div><div style="max-height:60vh;overflow:auto"><table id="knBulan"></table></div></div>
+      <div class="card"><div class="card-title">🏆 Barang terlaris di <select id="knKanal" onchange="knRender()"></select> <select id="knUrut" onchange="knRender()"><option value="omzet">Nilai terbesar</option><option value="qty">Qty terbanyak</option></select></div>
+        <div style="max-height:60vh;overflow:auto"><table id="knTop"></table></div></div>
+    </div>`
+    main.appendChild(tab2)
     const asli = window.showTab
-    window.showTab = function (id, b) { asli(id, b); if (id === 'custom') muat().then(render) }
-    _fbReady.then(() => { if (_peranAnalitik === 'admin') btn.style.display = '' }).catch(() => {})
+    window.showTab = function (id, b) { asli(id, b); if (id === 'custom') muat().then(render); if (id === 'kanal') muat().then(renderKanal) }
+    _fbReady.then(() => { if (_peranAnalitik === 'admin') { btn.style.display = ''; btn2.style.display = '' } }).catch(() => {})
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pasang); else pasang()
   window._cuTest = { bacaExcel, perBulan, jenisDari, kelompokDari, tglIso }
