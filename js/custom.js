@@ -114,20 +114,27 @@
       const ring = {}; rows.forEach(r => { ring[r.j] = (ring[r.j] || 0) + (r.q || 0) })
       const kanal = {}; Object.entries(x.kanal).forEach(([k, v]) => { kanal[k] = { omzet: v.omzet, qty: v.qty, struk: v.struk.size } })
       const topKanal = {}; Object.entries(x.itemKanal).forEach(([k, m]) => { topKanal[k] = Object.values(m).sort((a, c) => c.r - a.r).slice(0, 200) })
-      await db.collection('penjualan_custom').doc(b).set({ rows, semua: { omzet: x.omzet, baris: x.baris }, kanal, topKanal, sumber: nama, updated_at: now, updated_by: _currentUserName || '' })
+      const isi = { rows, semua: { omzet: x.omzet, baris: x.baris }, kanal, topKanal, sumber: nama, updated_at: now, updated_by: _currentUserName || '' }
+      if (_OUTLET) { await db.collection('outlet_custom').doc(_OUTLET + '__' + b).set({ ...isi, outlet: _OUTLET, bulan: b }); continue }   // custom outlet (laporan akun Olsera outlet)
+      await db.collection('penjualan_custom').doc(b).set(isi)
       await db.collection('penjualan_custom_ringkas').doc(b).set({ j: Object.entries(ring).map(([k, q]) => ({ k, q })), updated_at: now })
     }
   }
 
   // ── Data & tampilan ───────────────────────────────────────────────
   let DATA = null   // { 'YYYY-MM': {rows, semua} }
+  let KATA_STOK = []   // kata kunci barang custom yang distok/disiapkan (settings/custom_stok, diatur Owner)
+  window._cuData = () => DATA; window._cuKataStok = () => KATA_STOK
   let DARI_TOP = null   // daftar 'YYYY-MM' periode Top Produk saat baris "Custom" diklik
   // Label bulan Analitik ('Jan-25', 'Agt-26', 'Mei-26') → 'YYYY-MM'
   const keIso = l => { const m = String(l).match(/^([A-Za-z]+)[-\s]?(\d{2,4})$/); if (!m) return ''; const b = BLN[m[1].slice(0, 3).toLowerCase()]; const y = +m[2] < 100 ? 2000 + +m[2] : +m[2]; return b ? `${y}-${pad(b)}` : '' }
   async function muat(paksa) {
     if (DATA && !paksa) return DATA
     DATA = {}
-    try { await _fbReady; (await _app.firestore().collection('penjualan_custom').get()).forEach(d => { DATA[d.id] = d.data() }) }
+    try { await _fbReady; const db = _app.firestore()
+      if (_OUTLET) (await db.collection('outlet_custom').where('outlet', '==', _OUTLET).get()).forEach(d => { DATA[d.data().bulan || d.id.split('__').pop()] = d.data() })
+      else (await db.collection('penjualan_custom').get()).forEach(d => { DATA[d.id] = d.data() })
+      try { const k = await db.collection('settings').doc('custom_stok').get(); KATA_STOK = k.exists ? (k.data().kata || []) : [] } catch (e) { KATA_STOK = [] } }
     catch (e) { console.warn('penjualan_custom', e); document.getElementById('cuStatus').textContent = '⚠️ Data custom gagal dimuat: ' + (e.code === 'permission-denied' ? 'akun ini tidak punya akses' : e.message) }
     return DATA
   }
@@ -151,6 +158,7 @@
     const kosong = !Object.keys(DATA).length
     document.getElementById('cuIsi').style.display = kosong ? 'none' : ''
     document.getElementById('cuKosong').style.display = kosong ? '' : 'none'
+    renderStokCustom()
     if (kosong) return
     const { bln, rows } = terpilih(), sum = (a, k) => a.reduce((t, x) => t + (x[k] || 0), 0)
     const omzetToko = bln.reduce((t, b) => t + (DATA[b].semua?.omzet || 0), 0)
@@ -218,6 +226,31 @@
     document.getElementById('knTop').innerHTML = '<tr><th>#</th><th>Barang</th><th class="r">Qty</th><th class="r">Nilai</th></tr>' + (top.length ? top.slice(0, 100).map((x, i) => `<tr><td>${i + 1}</td><td style="white-space:normal;min-width:200px">${esc(x.i)}</td><td class="r">${x.q.toLocaleString('id-ID')}</td><td class="r">${rp(x.r)}</td></tr>`).join('') : '<tr><td colspan="4" style="color:#64748b">Tidak ada penjualan marketplace di periode ini</td></tr>')
   }
   window.knRender = () => renderKanal()
+  // ── Custom yang distok (topi/dasi sekolah, dll.): rata-rata 3 bulan per jenis yang cocok kata kunci → usulan siapkan ──
+  const cocokStok = (j, i) => { const t = (j + ' ' + i).toUpperCase(); return KATA_STOK.find(k => t.includes(k)) }
+  function hitungCustomStok(n = 3) {
+    const bln = Object.keys(DATA || {}).sort().slice(-n), J = {}
+    bln.forEach(b => (DATA[b].rows || []).forEach(r => { const k = cocokStok(r.j, r.i); if (!k) return; const x = J[r.j] = J[r.j] || { j: r.j, kata: k, q: 0, contoh: r.i }; x.q += r.q || 0 }))
+    return { bln, list: Object.values(J).map(x => ({ ...x, avg: bln.length ? +(x.q / bln.length).toFixed(1) : 0 })).sort((a, b) => b.avg - a.avg) }
+  }
+  window._cuHitungStok = hitungCustomStok
+  window._cuMuat = paksa => muat(paksa)
+  function renderStokCustom() {
+    const box = document.getElementById('cuStok'); if (!box) return
+    const owner = !!window._isOwnerAn
+    document.getElementById('cuKata').value = KATA_STOK.join(', '); document.getElementById('cuKata').disabled = !owner
+    document.getElementById('cuKataBtn').style.display = owner ? '' : 'none'
+    if (!KATA_STOK.length) { box.innerHTML = '<p style="font-size:.78rem;color:#64748b">Belum ada kata kunci. Owner isi di atas, mis. <b>TOPI, DASI</b>.</p>'; return }
+    const { bln, list } = hitungCustomStok(3), bulan = +document.getElementById('cuStokBln').value || 1
+    box.innerHTML = list.length ? `<p style="font-size:.74rem;color:#475569;margin-bottom:6px">Rata-rata ${bln.map(labelBln).join(', ')}. Usulan = laku/bln × ${bulan} bulan.</p><div class="cu-scroll"><table><tr><th>Jenis custom</th><th>Kata</th><th class="r">Laku/bln</th><th class="r">Usulan siapkan</th></tr>${list.slice(0, 200).map(x => `<tr><td style="white-space:normal;min-width:200px"><b style="font-weight:600">${esc(x.j)}</b>${x.j !== x.contoh.toUpperCase() ? `<div style="font-size:.66rem;color:#64748b">cth: ${esc(x.contoh)}</div>` : ''}</td><td>${esc(x.kata)}</td><td class="r">${x.avg}</td><td class="r" style="font-weight:700">${Math.ceil(x.avg * bulan)}</td></tr>`).join('')}</table></div>`
+      : '<p style="font-size:.78rem;color:#64748b">Tidak ada penjualan custom yang cocok dengan kata kunci di 3 bulan terakhir.</p>'
+  }
+  window.cuRenderStok = () => renderStokCustom()
+  window.cuSimpanKata = async () => {
+    const kata = document.getElementById('cuKata').value.split(',').map(t => t.trim().toUpperCase()).filter(Boolean)
+    try { await _app.firestore().collection('settings').doc('custom_stok').set({ kata, updated_at: firebase.firestore.FieldValue.serverTimestamp(), updated_by: _currentUserName || '' }); KATA_STOK = kata; renderStokCustom(); alert('✅ Kata kunci custom yang distok disimpan') }
+    catch (e) { alert('Gagal: ' + e.message) }
+  }
   window.cuPilihKelompok = k => { document.getElementById('cuKelompok').value = k; render() }
   window.cuRender = () => render()
   window.cuExcel = () => {
@@ -265,7 +298,7 @@
       st.textContent = '☁️ Menyimpan...'
       await simpan(B, [...files].map(f => f.name).join(', '))
       await muat(true); render()
-      st.textContent = `✅ Tersimpan: ${bl.map(labelBln).join(', ')} · ${nCu.toLocaleString('id-ID')} item custom (Stok Manager ikut terbarui)`
+      st.textContent = `✅ Tersimpan: ${bl.map(labelBln).join(', ')} · ${nCu.toLocaleString('id-ID')} item custom${_OUTLET ? ' (outlet ini)' : ' (Stok Manager ikut terbarui)'}`
     } catch (e) { console.error(e); st.textContent = '⚠️ ' + e.message }
     finally { const inp = document.getElementById('cuFile'); if (inp) inp.value = '' }
   }
@@ -289,6 +322,10 @@
       <label class="pbtn active" style="cursor:pointer;display:inline-block">📤 Upload Item Penjualan<input type="file" id="cuFile" accept=".xlsx,.xls,.pdf,.zip" multiple style="display:none" onchange="cuUpload(this.files)"></label>
       <span id="cuStatus" style="font-size:.75rem;color:#64748b;margin-left:8px"></span>
     </div>
+    <div class="card"><div class="card-title">🧢 Custom yang distok / disiapkan <select id="cuStokBln" onchange="cuRenderStok()" style="font-size:.75rem;padding:4px 8px;border-radius:8px;border:1.5px solid rgba(3,69,67,.2)"><option value="1">untuk 1 bulan</option><option value="2">2 bulan</option><option value="3">3 bulan</option></select></div>
+      <p style="font-size:.76rem;color:#475569;margin-bottom:6px">Barang custom yang laku rutin (mis. topi & dasi sekolah) bisa disiapkan lebih dulu. Kata kunci berlaku untuk HQ & semua outlet.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><input id="cuKata" placeholder="Kata kunci, pisah koma — mis. TOPI, DASI" style="flex:1;min-width:200px;padding:6px 10px;border-radius:8px;border:1.5px solid rgba(3,69,67,.2)"><button id="cuKataBtn" class="pbtn active" onclick="cuSimpanKata()">💾 Simpan</button></div>
+      <div id="cuStok"></div></div>
     <div id="cuKosong" class="card" style="display:none;color:#64748b;font-size:.85rem">Belum ada data barang custom. Upload laporan Item Penjualan di atas.</div>
     <div id="cuIsi" style="display:none">
       <div class="cu-filter">
@@ -325,7 +362,7 @@
     main.appendChild(tab2)
     const asli = window.showTab
     window.showTab = function (id, b) { asli(id, b); if (id === 'custom') muat().then(render); if (id === 'kanal') muat().then(renderKanal) }
-    _fbReady.then(() => { if (_peranAnalitik === 'admin' && !_OUTLET && !_outletSaya) { btn.style.display = ''; btn2.style.display = '' } }).catch(() => {})
+    _fbReady.then(() => { if (_peranAnalitik === 'admin' && (_OUTLET || !_outletSaya)) { btn.style.display = ''; btn2.style.display = '' } }).catch(() => {})
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pasang); else pasang()
   window._cuTest = { bacaExcel, perBulan, jenisDari, kelompokDari, tglIso }

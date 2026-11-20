@@ -35,7 +35,7 @@
   function modeOutlet() {
     const nama = namaOutlet(_OUTLET)
     const sub = document.getElementById('headerSub'); if (sub) sub.insertAdjacentHTML('beforebegin', `<div style="display:inline-block;background:#fef3c7;color:#92400e;border-radius:999px;padding:2px 10px;font-size:.72rem;font-weight:700;margin:4px 0">🏬 Outlet: ${esc(nama)}</div>`)
-    ;['inventori', 'stok', 'custom', 'kanal'].forEach(id => { const b = document.getElementById('nav-' + id); if (b) b.style.display = 'none' })
+    ;['inventori', 'stok'].forEach(id => { const b = document.getElementById('nav-' + id); if (b) b.style.display = 'none' })
     document.title = 'Analitik ' + nama
     const lbl = document.getElementById('globalUploadStatus'); if (lbl && !lbl.textContent) lbl.textContent = `Upload laporan Olsera "Penjualan berdasarkan SKU" akun outlet ${nama}`
   }
@@ -72,6 +72,7 @@
           <label style="font-size:.72rem;color:#475569">Jenis<select id="olJenis" style="width:100%"><option value="keluarga">${JENIS.keluarga}</option><option value="mitra">${JENIS.mitra}</option></select></label>
           <label style="font-size:.72rem;color:#475569">Pemilik / PJ<input id="olPemilik" placeholder="opsional" style="width:100%"></label>
         </div>
+        <label id="olSendiriWrap" style="font-size:.72rem;color:#475569;display:block;margin-top:8px">Barang yang <b>distok sendiri</b> (tidak dipesan ke HQ) — kata kunci nama/kategori, pisah koma<input id="olSendiri" placeholder="cth: TOPI, DASI" style="width:100%"></label>
         <label style="font-size:.78rem;display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="olAktif" checked style="width:auto"> Aktif</label>
         <div style="display:flex;gap:8px;margin-top:10px"><button class="pbtn active" onclick="olSimpan()">💾 Simpan outlet</button><button class="pbtn" onclick="olBatal()">Batal</button></div>
         <p style="font-size:.72rem;color:#64748b;margin-top:8px">Setelah outlet dibuat: di <b>Portal → Kelola Pengguna</b>, beri staf outlet akses Analitik dan pilih outletnya. Staf itu hanya melihat & meng-upload data outletnya.</p>
@@ -109,14 +110,14 @@
       + (baris.length > 300 ? `<tr><td colspan="${enam.length + 6}" style="color:#64748b">… ${baris.length - 300} outlet lain — pakai pencarian</td></tr>` : '')
       + (Object.keys(RINGKAS).length <= 1 ? `<tr><td colspan="${enam.length + 6}" style="color:#64748b;white-space:normal">Belum ada data outlet lain. Outlet mulai muncul setelah staf outlet meng-upload laporan Olsera-nya.</td></tr>` : '')
     document.getElementById('olN').textContent = `· ${OUTLETS.length} outlet`
-    document.getElementById('olDaftar').innerHTML = OUTLETS.length ? `<table><tr><th>Nama</th><th>Tipe</th><th>Jenis</th><th>Pemilik / PJ</th><th>Status</th><th></th></tr>${OUTLETS.map(o => `<tr><td><b>${esc(o.nama)}</b> <span style="font-size:.66rem;color:#94a3b8">${esc(o.id)}</span></td><td>${o.tipe === 'titik' ? 'Titik' : 'Cabang'}</td><td>${o.jenis === 'mitra' ? 'Mitra' : 'Keluarga'}</td><td>${esc(o.pemilik || '')}</td><td>${o.aktif === false ? '<span style="color:#b91c1c">nonaktif</span>' : 'aktif'}</td><td>${window._isOwnerAn ? `<button class="pbtn" onclick="olUbah('${esc(o.id)}')">✏️</button>` : ''}</td></tr>`).join('')}</table>`
+    document.getElementById('olDaftar').innerHTML = OUTLETS.length ? `<table><tr><th>Nama</th><th>Tipe</th><th>Jenis</th><th>Stok sendiri</th><th>Pemilik / PJ</th><th>Status</th><th></th></tr>${OUTLETS.map(o => `<tr><td><b>${esc(o.nama)}</b> <span style="font-size:.66rem;color:#94a3b8">${esc(o.id)}</span></td><td>${o.tipe === 'titik' ? 'Titik' : 'Cabang'}</td><td>${o.jenis === 'mitra' ? 'Mitra' : 'Keluarga'}</td><td style="white-space:normal">${o.jenis === 'mitra' ? '<span style="color:#94a3b8">semua dari HQ</span>' : esc((o.stokSendiri || []).join(', ')) || '<span style="color:#94a3b8">—</span>'}</td><td>${esc(o.pemilik || '')}</td><td>${o.aktif === false ? '<span style="color:#b91c1c">nonaktif</span>' : 'aktif'}</td><td>${window._isOwnerAn ? `<button class="pbtn" onclick="olUbah('${esc(o.id)}')">✏️</button>` : ''}</td></tr>`).join('')}</table>`
       : `<p style="font-size:.8rem;color:#64748b">Belum ada outlet.${window._isOwnerAn ? ' Tambahkan di bawah (cth: Cabang Sudiang, Harmonis Sentral).' : ''}</p>`
   }
   window.olUbah = id => { const o = OUTLETS.find(x => x.id === id); if (!o) return
     document.getElementById('olId').value = o.id; document.getElementById('olNama').value = o.nama || ''; document.getElementById('olTipe').value = o.tipe || 'cabang'
-    document.getElementById('olJenis').value = o.jenis || 'keluarga'; document.getElementById('olPemilik').value = o.pemilik || ''; document.getElementById('olAktif').checked = o.aktif !== false
+    document.getElementById('olJenis').value = o.jenis || 'keluarga'; document.getElementById('olPemilik').value = o.pemilik || ''; document.getElementById('olSendiri').value = (o.stokSendiri || []).join(', '); document.getElementById('olAktif').checked = o.aktif !== false
     const f = document.getElementById('olForm'); f.open = true; f.scrollIntoView({ behavior: 'smooth' }) }
-  window.olBatal = () => { ['olId', 'olNama', 'olPemilik'].forEach(i => document.getElementById(i).value = ''); document.getElementById('olAktif').checked = true; document.getElementById('olForm').open = false }
+  window.olBatal = () => { ['olId', 'olNama', 'olPemilik', 'olSendiri'].forEach(i => document.getElementById(i).value = ''); document.getElementById('olAktif').checked = true; document.getElementById('olForm').open = false }
   window.olSimpan = async () => {
     const nama = document.getElementById('olNama').value.trim(); if (!nama) return alert('Nama outlet wajib diisi')
     const id = document.getElementById('olId').value || idOutlet(nama)
@@ -124,7 +125,8 @@
     if (!document.getElementById('olId').value && OUTLETS.some(o => o.id === id)) return alert('Outlet dengan nama ini sudah ada')
     try {
       await _app.firestore().collection('outlet').doc(id).set({ nama, tipe: document.getElementById('olTipe').value, jenis: document.getElementById('olJenis').value,
-        pemilik: document.getElementById('olPemilik').value.trim(), aktif: document.getElementById('olAktif').checked, updated_at: firebase.firestore.FieldValue.serverTimestamp(), updated_by: _currentUserName || '' }, { merge: true })
+        pemilik: document.getElementById('olPemilik').value.trim(),
+        stokSendiri: document.getElementById('olJenis').value === 'mitra' ? [] : document.getElementById('olSendiri').value.split(',').map(t => t.trim().toUpperCase()).filter(Boolean), aktif: document.getElementById('olAktif').checked, updated_at: firebase.firestore.FieldValue.serverTimestamp(), updated_by: _currentUserName || '' }, { merge: true })
       olBatal(); await muatOutlet(); const s = document.getElementById('pilihOutlet'); if (s) s.remove(); pasangPilihLokasi(); olRender()
     } catch (e) { alert('Gagal menyimpan outlet: ' + (e.code === 'permission-denied' ? 'hanya Owner yang bisa mengelola outlet' : e.message)) }
   }

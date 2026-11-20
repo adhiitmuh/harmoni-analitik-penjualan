@@ -28,6 +28,9 @@
     return S
   }
   const mitra = () => S?.outlet?.jenis === 'mitra'
+  // Barang "stok sendiri" ditetapkan Owner per outlet (kata kunci nama/kategori) — tidak dipesan ke HQ
+  const kataSendiri = () => mitra() ? [] : (S?.outlet?.stokSendiri || [])
+  const isSendiri = (nama, kat = '') => { const t = (nama + ' ' + kat).toUpperCase(); return kataSendiri().find(k => t.includes(k)) || '' }
   const namaSku = k => { const i = S.info[k] || S.nama[k]; return i ? [i[0], i[1]].filter(x => x && x !== '-').join(' · ') : k }
   const sedangDipesan = () => { const m = {}; S.pesanan.filter(p => p.status === 'diajukan' || p.status === 'dikirim').forEach(p => (p.items || []).forEach(it => { m[it.sku] = (m[it.sku] || 0) + (+(p.status === 'dikirim' ? it.kirim ?? it.qty : it.qty) || 0) })); return m }
 
@@ -38,7 +41,7 @@
     // Barang custom (diketik kasir / kategori CUSTOM) tidak dipesan dari stok HQ
     const custom = k => { const i = S.info[k] || S.nama[k] || []; return /^custom$/i.test(String(k).trim()) || /^custom$/i.test(String(i[0] || '').trim()) || /^custom$/i.test(String(i[2] || '').trim()) }
     const sku = [...new Set([...Object.keys(S.stok), ...Object.keys(S.laku)])].filter(k => !custom(k))
-    const rows = sku.map(k => { const stok = +S.stok[k] || 0, laku = S.laku[k] || 0, sendiri = !mitra() && !!S.sendiri[k], dipesan = dp[k] || 0
+    const rows = sku.map(k => { const stok = +S.stok[k] || 0, laku = S.laku[k] || 0, i = S.info[k] || S.nama[k] || [], sendiri = isSendiri(namaSku(k), i[2] || ''), dipesan = dp[k] || 0
       const usul = sendiri ? 0 : Math.max(0, Math.ceil(laku * bln) - stok - dipesan)
       return { k, nama: namaSku(k), stok, laku, sendiri, dipesan, usul } })
       .filter(r => (!q || (r.k + ' ' + r.nama).toUpperCase().includes(q)) && (f === 'semua' || (f === 'pesan' && r.usul > 0) || (f === 'kosong' && r.stok <= 0 && r.laku > 0) || (f === 'sendiri' && r.sendiri)))
@@ -49,7 +52,7 @@
     document.getElementById('osTabel').innerHTML = `<tr><th>Barang</th><th class="r">Stok</th><th class="r">Laku/bln</th><th class="r">Dipesan</th>${mitra() ? '' : '<th>Sumber</th>'}<th class="r">Pesan ke HQ</th></tr>` + rows.slice(0, 400).map((r, i) => `<tr>
       <td style="white-space:normal;min-width:180px"><b style="font-weight:600">${esc(r.nama)}</b><div style="font-size:.66rem;color:#94a3b8">${esc(r.k)}</div></td>
       <td class="r" style="${r.stok <= 0 ? 'color:#b91c1c;font-weight:700' : ''}">${r.stok.toLocaleString('id-ID')}</td><td class="r">${r.laku || '—'}</td><td class="r">${r.dipesan || ''}</td>
-      ${mitra() ? '' : `<td><label style="font-size:.7rem;display:flex;gap:4px;align-items:center;white-space:nowrap"><input type="checkbox" ${r.sendiri ? 'checked' : ''} onchange="osSendiri('${esc(r.k)}',this.checked)" style="width:auto">produksi sendiri</label></td>`}
+      ${mitra() ? '' : `<td style="font-size:.7rem;color:${r.sendiri ? '#5b21b6' : '#94a3b8'}">${r.sendiri ? '🏠 stok sendiri (' + esc(r.sendiri) + ')' : 'HQ'}</td>`}
       <td class="r"><input type="number" min="0" inputmode="numeric" data-sku="${esc(r.k)}" value="${r.usul || ''}" placeholder="0" ${r.sendiri ? 'disabled' : ''} style="width:72px;text-align:right"></td></tr>`).join('')
       + (rows.length > 400 ? `<tr><td colspan="6" style="color:#64748b">… ${rows.length - 400} barang lain — pakai pencarian</td></tr>` : '')
       + (!rows.length ? '<tr><td colspan="6" style="color:#64748b">Tidak ada barang. Upload stok outlet dan laporan penjualan outlet dulu.</td></tr>' : '')
@@ -67,9 +70,22 @@
   }
 
   window.osRender = () => render()
-  window.osSendiri = async (k, v) => {
-    try { await _app.firestore().collection('outlet_stok').doc(_OUTLET).set({ sendiri: { [k]: v ? true : FV().delete() } }, { merge: true }); if (v) S.sendiri[k] = true; else delete S.sendiri[k]; render() }
-    catch (e) { alert('Gagal: ' + e.message) }
+  window.renderCustomOs = () => renderCustom().catch(() => {})
+  async function renderCustom() {
+    const tb = document.getElementById('osCustom'); if (!tb || typeof _cuMuat !== 'function') return
+    await _cuMuat(); const { bln, list } = _cuHitungStok(3), bulan = +document.getElementById('osBulan').value || 1, dp = sedangDipesan()
+    window._osCu = list.map(x => { const sendiri = isSendiri(x.j + ' ' + x.contoh), k = 'CUSTOM:' + x.j, dipesan = dp[k] || 0; return { ...x, k, sendiri, dipesan, usul: sendiri ? 0 : Math.max(0, Math.ceil(x.avg * bulan) - dipesan) } })
+    tb.innerHTML = !_cuKataStok().length ? '<tr><td style="color:#64748b">Owner belum mengisi kata kunci custom yang distok (Analitik HQ → 🧵 Barang Custom).</td></tr>'
+      : !list.length ? `<tr><td style="color:#64748b">Belum ada penjualan custom yang cocok${bln.length ? '' : ' — upload laporan Item Penjualan outlet di tab 🧵'}.</td></tr>`
+      : '<tr><th>Jenis custom</th><th class="r">Laku/bln</th><th class="r">Dipesan</th><th>Sumber</th><th class="r">Pesan ke HQ</th></tr>' + window._osCu.map(x => `<tr><td style="white-space:normal;min-width:180px"><b style="font-weight:600">${esc(x.j)}</b></td><td class="r">${x.avg}</td><td class="r">${x.dipesan || ''}</td><td style="font-size:.7rem;color:${x.sendiri ? '#5b21b6' : '#94a3b8'}">${x.sendiri ? '🏠 stok sendiri' : 'HQ'}</td>
+        <td class="r"><input type="number" min="0" data-cu="${esc(x.k)}" data-nama="${esc(x.j)}" value="${x.usul || ''}" placeholder="0" ${x.sendiri ? 'disabled' : ''} style="width:72px;text-align:right"></td></tr>`).join('')
+  }
+  window.osKirimCustom = async () => {
+    const items = [...document.querySelectorAll('#osCustom input[data-cu]')].map(el => ({ sku: el.dataset.cu, nama: el.dataset.nama + ' (custom)', qty: Math.max(0, parseInt(el.value) || 0), custom: true })).filter(x => x.qty > 0)
+    if (!items.length) return alert('Isi qty custom yang mau dipesan ke HQ')
+    if (!confirm(`Pesan custom ke HQ: ${items.length} jenis, ${items.reduce((t, i) => t + i.qty, 0)} pcs?`)) return
+    try { await _app.firestore().collection('outlet_pesanan').add({ outlet: _OUTLET, outletNama: S.outlet.nama || _OUTLET, jenis: S.outlet.jenis || '', status: 'diajukan', items, catatan: 'Custom yang distok', dibuat_at: FV().serverTimestamp(), dibuat_oleh: _currentUserName || '' })
+      await muat(); render(); renderCustom(); alert('✅ Pesanan custom terkirim ke HQ') } catch (e) { alert('Gagal: ' + e.message) }
   }
   window.osKirim = async () => {
     const items = [...document.querySelectorAll('#osTabel input[data-sku]')].map(el => ({ sku: el.dataset.sku, qty: Math.max(0, parseInt(el.value) || 0) })).filter(x => x.qty > 0).map(x => ({ ...x, nama: namaSku(x.sku) }))
@@ -131,15 +147,18 @@
       <p id="osInfo" style="font-size:.74rem;color:#475569;margin-bottom:8px"></p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
         <input id="osCari" type="search" placeholder="Cari barang / SKU…" oninput="clearTimeout(window._osT);window._osT=setTimeout(osRender,250)" style="flex:1;min-width:160px">
-        <select id="osFilter" onchange="osRender()"><option value="pesan">Perlu dipesan</option><option value="kosong">Kosong & laku</option><option value="semua">Semua barang</option><option value="sendiri">Produksi sendiri</option></select>
-        <select id="osBulan" onchange="osRender()"><option value="1">Stok untuk 1 bulan</option><option value="2">2 bulan</option><option value="0.5">2 minggu</option></select>
+        <select id="osFilter" onchange="osRender()"><option value="pesan">Perlu dipesan</option><option value="kosong">Kosong & laku</option><option value="semua">Semua barang</option><option value="sendiri">Stok sendiri</option></select>
+        <select id="osBulan" onchange="osRender();renderCustomOs()"><option value="1">Stok untuk 1 bulan</option><option value="2">2 bulan</option><option value="0.5">2 minggu</option></select>
       </div>
       <div style="max-height:60vh;overflow:auto"><table id="osTabel"></table></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><input id="osCatatan" placeholder="Catatan untuk HQ (opsional)" style="flex:1;min-width:180px"><button class="pbtn active" onclick="osKirim()">📨 Kirim pesanan ke HQ</button></div></div>
+    <div class="card"><div class="card-title">🧢 Custom yang distok</div><p style="font-size:.74rem;color:#475569;margin-bottom:6px">Dari laporan <b>Item Penjualan</b> outlet ini (upload di tab 🧵 Barang Custom) yang cocok kata kunci Owner (mis. TOPI, DASI). Yang termasuk "stok sendiri" outlet ini tidak dipesan ke HQ.</p>
+      <div style="max-height:50vh;overflow:auto"><table id="osCustom"></table></div>
+      <div style="margin-top:8px"><button class="pbtn active" onclick="osKirimCustom()">📨 Pesan custom ini ke HQ</button></div></div>
     <div class="card"><div class="card-title">📋 Riwayat pesanan ke HQ</div><div id="osPesanan"></div></div>`
     main.appendChild(tab)
     const asli = window.showTab
-    window.showTab = function (id, b) { asli(id, b); if (id === 'ostok') (S ? Promise.resolve() : muat()).then(render).catch(e => { document.getElementById('osInfo').textContent = '⚠️ ' + e.message }) }
+    window.showTab = function (id, b) { asli(id, b); if (id === 'ostok') (S ? Promise.resolve() : muat()).then(() => { render(); renderCustom().catch(e => console.warn(e)) }).catch(e => { document.getElementById('osInfo').textContent = '⚠️ ' + e.message }) }
   }
   function mulai() { _fbReady.then(() => { if (_peranAnalitik === 'admin') pasang() }).catch(() => {}) }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mulai); else mulai()
