@@ -17,3 +17,9 @@ Aturan kerja lintas app: lihat `harmoni-indonesia/CLAUDE.md`.
 
 ## Uji
 Di sandbox CDN Chart.js tidak termuat → skrip berhenti di bagian grafik; uji fungsi dengan mengekstrak potongan kode (lihat riwayat sesi).
+
+## Barang Custom (`js/custom.js`, tab 🧵 Owner/Admin)
+- Upload laporan Olsera **Item Penjualan berdasarkan Tanggal** (Excel; PDF juga dibaca lewat pdf.js — posisi kolom tetap). Item custom = Unit kosong & Modal 0 (nama diketik kasir). Jenis = teks dalam kurung di akhir nama.
+- Simpan `penjualan_custom/{YYYY-MM}` {rows:[{t,no,k,p,i,j,q,r}], semua:{omzet,baris}} (Owner/Admin) + `penjualan_custom_ringkas/{YYYY-MM}` {j:[{k,q}]} untuk Stok Manager (kebutuhan bahan custom di Daftar Belanja). Upload ulang bulan sama = ganti.
+- Top Produk punya kolom Stok Toko/Gudang (jumlah SKU produk+varian dari `settings/stok_fisik`).
+
