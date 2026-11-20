@@ -114,6 +114,9 @@
 
   // ── Data & tampilan ───────────────────────────────────────────────
   let DATA = null   // { 'YYYY-MM': {rows, semua} }
+  let DARI_TOP = null   // daftar 'YYYY-MM' periode Top Produk saat baris "Custom" diklik
+  // Label bulan Analitik ('Jan-25', 'Agt-26', 'Mei-26') → 'YYYY-MM'
+  const keIso = l => { const m = String(l).match(/^([A-Za-z]+)[-\s]?(\d{2,4})$/); if (!m) return ''; const b = BLN[m[1].slice(0, 3).toLowerCase()]; const y = +m[2] < 100 ? 2000 + +m[2] : +m[2]; return b ? `${y}-${pad(b)}` : '' }
   async function muat(paksa) {
     if (DATA && !paksa) return DATA
     DATA = {}
@@ -126,12 +129,12 @@
   function pilihanPeriode() {
     const sel = document.getElementById('cuPeriode'), v = sel.value, bln = Object.keys(DATA).sort()
     const thn = [...new Set(bln.map(b => b.slice(0, 4)))]
-    sel.innerHTML = '<option value="">Semua bulan</option>' + thn.map(t => `<option value="${t}">Tahun ${t}</option>`).join('') + bln.slice().reverse().map(b => `<option value="${b}">${labelBln(b)}</option>`).join('')
+    sel.innerHTML = (DARI_TOP ? `<option value="__top">Sesuai periode Top Produk (${DARI_TOP.length} bulan)</option>` : '') + '<option value="">Semua bulan</option>' + thn.map(t => `<option value="${t}">Tahun ${t}</option>`).join('') + bln.slice().reverse().map(b => `<option value="${b}">${labelBln(b)}</option>`).join('')
     if ([...sel.options].some(o => o.value === v)) sel.value = v
   }
   function terpilih() {
     const per = document.getElementById('cuPeriode').value, q = document.getElementById('cuCari').value.trim().toUpperCase(), kel = document.getElementById('cuKelompok').value
-    const bln = Object.keys(DATA).sort().filter(b => !per || b.startsWith(per))
+    const bln = Object.keys(DATA).sort().filter(b => per === '__top' ? DARI_TOP.includes(b) : !per || b.startsWith(per))
     const rows = []; bln.forEach(b => (DATA[b].rows || []).forEach(r => { const g = kelompokDari(r.i, r.j); if ((!q || (r.i + ' ' + r.j).toUpperCase().includes(q)) && (!kel || g === kel)) rows.push({ ...r, b, g }) }))
     return { bln, rows }
   }
@@ -173,6 +176,15 @@
     document.getElementById('cuDetail').innerHTML = '<tr><th>Tanggal</th><th>Item (diketik kasir)</th><th>Jenis</th><th class="r">Qty</th><th class="r">Omzet</th><th>Kasir</th></tr>' + det.slice(0, 300).map(r =>
       `<tr><td>${esc(r.t)}</td><td style="white-space:normal;min-width:220px">${esc(r.i)}</td><td style="white-space:normal">${esc(r.j)}</td><td class="r">${(r.q || 0).toLocaleString('id-ID')}</td><td class="r">${rp(r.r)}</td><td>${esc(r.k)}</td></tr>`).join('')
       + (det.length > 300 ? `<tr><td colspan="6" style="color:#64748b">Menampilkan 300 dari ${det.length.toLocaleString('id-ID')} baris — unduh Excel untuk semuanya</td></tr>` : '')
+  }
+  // Dari Top Produk: buka tab ini dengan periode yang sama
+  window.cuBukaDariTop = async () => {
+    try { const idx = (typeof FILTERED_IDX !== 'undefined' && FILTERED_IDX.length) ? FILTERED_IDX : BULAN.map((_, i) => i); DARI_TOP = idx.map(i => keIso(BULAN[i])).filter(Boolean) } catch (e) { DARI_TOP = null }
+    showTab('custom', document.getElementById('nav-custom'))
+    await muat(); pilihanPeriode(); const sel = document.getElementById('cuPeriode'); if (DARI_TOP && [...sel.options].some(o => o.value === '__top')) sel.value = '__top'
+    document.getElementById('cuKelompok').value = ''; document.getElementById('cuCari').value = ''; render()
+    const ada = DARI_TOP ? DARI_TOP.filter(b => DATA[b]).length : 0
+    const st = document.getElementById('cuStatus'); if (DARI_TOP && ada < DARI_TOP.length) st.textContent = `ℹ️ Rincian custom tersedia untuk ${ada} dari ${DARI_TOP.length} bulan periode ini — upload laporan Item Penjualan bulan lainnya.`
   }
   window.cuPilihKelompok = k => { document.getElementById('cuKelompok').value = k; render() }
   window.cuRender = () => render()
