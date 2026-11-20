@@ -562,6 +562,8 @@
 // var (bukan let) agar aman diakses dari fungsi mana pun walau init Firebase gagal
 var _peranAnalitik = null; // 'admin' (Owner/Admin) | 'operator'
 var _app = null, _fbReady = Promise.reject(new Error('cloud tidak tersedia')), _currentUserName = '';
+// Multi-outlet: ?outlet=ID → data penjualan outlet itu (koleksi outlet_penjualan); kosong = HQ (koleksi penjualan)
+var _OUTLET = (new URLSearchParams(location.search).get('outlet') || '').trim(), _outletSaya = '';
 _fbReady.catch(()=>{});
 // Data penjualan TIDAK ditanam di halaman (halaman ini publik di GitHub Pages);
 // dimuat dari Firestore setelah login sesuai role: Owner/Admin = data lengkap, Operator = ringkasan stok.
@@ -725,7 +727,7 @@ function finishUpload(rawRows,nFiles,st,errors=[]){
   const nBulan=[...new Set(rawRows.map(r=>r.bulan))].length;
   st.textContent='✅ '+(nFiles-errors.length)+' file · '+nBulan+' bulan · '+rawRows.length+' transaksi'+(errors.length?' · ⚠️ '+errors.length+' file dilewati':'');
   if(errors.length) setTimeout(()=>alert('File yang dilewati:\n\n• '+errors.join('\n• ')),50);
-  try{ localStorage.setItem('olsera_rawrows',JSON.stringify(rawRows)); localStorage.removeItem('olsera_cloud_sig'); }catch(e){ console.warn('localStorage penuh, data penjualan tidak tersimpan:',e); }
+  if(!_OUTLET) try{ localStorage.setItem('olsera_rawrows',JSON.stringify(rawRows)); localStorage.removeItem('olsera_cloud_sig'); }catch(e){ console.warn('localStorage penuh, data penjualan tidak tersimpan:',e); }
   // Simpan ke Firestore per bulan agar sinkron lintas perangkat
   const okMsg=st.textContent;
   (async()=>{
@@ -738,14 +740,20 @@ function finishUpload(rawRows,nFiles,st,errors=[]){
       rawRows.forEach(r=>{ if(!byMonth[r.bulan]) byMonth[r.bulan]=[]; byMonth[r.bulan].push(r); });
       const batch=db.batch();
       Object.entries(byMonth).forEach(([bulan,rows])=>{
-        const ref=db.collection('penjualan').doc(bulan.replace(/[^a-zA-Z0-9]/g,'-'));
-        batch.set(ref,{rows,updated_at:firebase.firestore.FieldValue.serverTimestamp(),updated_by:_currentUserName||''});
+        const id=bulan.replace(/[^a-zA-Z0-9]/g,'-');
+        const ref=_OUTLET?db.collection('outlet_penjualan').doc(_OUTLET+'__'+id):db.collection('penjualan').doc(id);
+        batch.set(ref,{rows,...(_OUTLET?{outlet:_OUTLET,bulan}:{}),updated_at:firebase.firestore.FieldValue.serverTimestamp(),updated_by:_currentUserName||''});
       });
       await batch.commit();
+      if(_OUTLET){
+        const semua=[]; (await db.collection('outlet_penjualan').where('outlet','==',_OUTLET).get()).forEach(d=>{ const r=d.data().rows; if(r&&r.length) semua.push(...r); });
+        if(semua.length){ rebuildAllData(semua); await simpanRingkasOutlet(semua); }
+        st.textContent=okMsg+' · ☁️ tersimpan untuk outlet ini'; _setUpdateBadge(new Date()); return;
+      }
       // Ringkasan Operator dari SEMUA bulan di cloud (bukan hanya file yang baru diupload)
       try{
         const semua=[]; (await db.collection('penjualan').get()).forEach(d=>{ const r=d.data().rows; if(r&&r.length) semua.push(...r); });
-        if(semua.length){ rebuildAllData(semua); try{ localStorage.setItem('olsera_rawrows',JSON.stringify(semua)); }catch(e){} await simpanRingkasOperator(null); }
+        if(semua.length){ rebuildAllData(semua); try{ localStorage.setItem('olsera_rawrows',JSON.stringify(semua)); }catch(e){} await simpanRingkasOperator(null); if(typeof simpanRingkasOutlet==='function') await simpanRingkasOutlet(semua); }
       }catch(e){ console.error('Gagal membuat ringkasan operator:',e); }
       st.textContent=okMsg+' · ☁️ tersinkron ke semua perangkat';
       _setUpdateBadge(new Date());
@@ -1160,8 +1168,8 @@ const COLORS = ['#034543','#1a8b88','#2eb8b4','#c2a000','#ea580c','#7c3aed','#dc
 
 // ── Stok fisik: harus diinisialisasi sebelum kode Chart.js agar tetap tersedia
 // walau CDN gagal load (Chart.defaults akan throw, menghentikan eksekusi)
-let STOK_TOKO   = JSON.parse(localStorage.getItem('stok_toko')||'{}');
-let STOK_GUDANG = JSON.parse(localStorage.getItem('stok_gudang')||'{}');
+let STOK_TOKO   = _OUTLET?{}:JSON.parse(localStorage.getItem('stok_toko')||'{}');   // stok HQ; mode outlet belum punya stok (Tahap 2)
+let STOK_GUDANG = _OUTLET?{}:JSON.parse(localStorage.getItem('stok_gudang')||'{}');
 // Info master produk dari file stok Olsera: sku -> [nama, varian, kategori, harga beli, harga jual]
 let STOK_INFO = {};
 try{ STOK_INFO = JSON.parse(localStorage.getItem('stok_info')||'{}'); }catch(e){}
@@ -2074,7 +2082,7 @@ function _setUpdateBadge(d){
   const akses=login.then(async u=>{
     const snap=await _app.firestore().collection('users').doc(u.uid).get();
     const p=snap.exists?snap.data():null;
-    const isOwner=p&&p.role==='owner';
+    const isOwner=p&&p.role==='owner'; window._isOwnerAn=isOwner;
     const app=(p&&p.apps&&p.apps.harmoni_analitik)||{};
     if(!p||!p.aktif||(!isOwner&&!app.akses)) throw {code:'portal/tanpa-akses'};
     _currentUserName=p.nama||'';
@@ -2083,8 +2091,12 @@ function _setUpdateBadge(d){
       const url=new URL(location.href); url.searchParams.delete('mode');
       location.replace(url.toString()); return new Promise(()=>{});
     }
-    _peranAnalitik=(isOwner||app.role==='admin')?'admin':'operator';
-    if(_peranAnalitik==='admin') muatLokal();
+    _outletSaya=isOwner?'':(app.outlet||'');
+    if(_outletSaya&&_OUTLET!==_outletSaya){ const url=new URL(location.href); url.searchParams.set('outlet',_outletSaya); location.replace(url.toString()); return new Promise(()=>{}); }
+    // Staf outlet = admin untuk data outletnya sendiri (upload & lihat analisa outletnya)
+    _peranAnalitik=(isOwner||app.role==='admin'||_outletSaya)?'admin':'operator';
+    if(_OUTLET&&_peranAnalitik!=='admin') throw {code:'portal/tanpa-akses'};
+    if(_peranAnalitik==='admin'&&!_OUTLET) muatLokal();
     if(isOwner||app.role==='admin'){
       const b=document.querySelector('.header .badge'); if(b&&/^Staff/.test(b.textContent)) b.textContent=isOwner?'Owner':'Admin';
     }
@@ -2110,9 +2122,9 @@ function _setUpdateBadge(d){
   _fbReady.then(async()=>{
     const db=_app.firestore();
     const [stokR,exclR,pjR,infoR,modalR,finalR]=await Promise.allSettled([
-      db.collection('settings').doc('stok_fisik').get(),
+      _OUTLET?Promise.resolve({exists:false}):db.collection('settings').doc('stok_fisik').get(),
       db.collection('settings').doc('inv_excluded').get(),
-      _peranAnalitik==='admin'?db.collection('penjualan').get():db.collection('penjualan_operator').get(),
+      _OUTLET?db.collection('outlet_penjualan').where('outlet','==',_OUTLET).get():_peranAnalitik==='admin'?db.collection('penjualan').get():db.collection('penjualan_operator').get(),
       muatStokInfoCloud(db),
       db.collection('settings').doc('modal_produk').get(),
       muatFinalCloud(db)
@@ -2173,13 +2185,14 @@ function _setUpdateBadge(d){
       if(allRows.length){
         // Data cloud sama dengan yang sudah dimuat dari perangkat → tidak perlu dihitung & disimpan ulang
         const sig=allRows.length+'|'+(latest?latest.getTime():0);
-        let sama=false; try{ sama=localStorage.getItem('olsera_cloud_sig')===sig&&!!localStorage.getItem('olsera_rawrows'); }catch(e){}
+        let sama=false; if(!_OUTLET) try{ sama=localStorage.getItem('olsera_cloud_sig')===sig&&!!localStorage.getItem('olsera_rawrows'); }catch(e){}
         if(!sama){
-          try{ localStorage.setItem('olsera_rawrows',JSON.stringify(allRows)); localStorage.setItem('olsera_cloud_sig',sig); }catch(e){}
+          if(!_OUTLET) try{ localStorage.setItem('olsera_rawrows',JSON.stringify(allRows)); localStorage.setItem('olsera_cloud_sig',sig); }catch(e){}
           rebuildAllData(allRows);
+          if(typeof simpanRingkasOutlet==='function') simpanRingkasOutlet(allRows);
         }
         document.getElementById('periodLabel').textContent='Semua '+BULAN.length+' Bulan';
-        simpanRingkasOperator(sig);
+        if(!_OUTLET) simpanRingkasOperator(sig);
         const nBulan=[...new Set(allRows.map(r=>r.bulan))].length;
         msg='☁️ Data cloud · '+nBulan+' bulan · '+allRows.length+' transaksi';
         const up=document.getElementById('uploadStatus');
@@ -2240,7 +2253,8 @@ function applyRole(role) {
   if (navMasalah) navMasalah.classList.add('active');
 }
 </script>
-<script src="js/custom.js?v=20261120c"></script>
+<script src="js/custom.js?v=20261120d"></script>
+<script src="js/outlet.js?v=20261120a"></script>
 
 </body>
 </html>

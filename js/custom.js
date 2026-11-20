@@ -325,7 +325,7 @@
     main.appendChild(tab2)
     const asli = window.showTab
     window.showTab = function (id, b) { asli(id, b); if (id === 'custom') muat().then(render); if (id === 'kanal') muat().then(renderKanal) }
-    _fbReady.then(() => { if (_peranAnalitik === 'admin') { btn.style.display = ''; btn2.style.display = '' } }).catch(() => {})
+    _fbReady.then(() => { if (_peranAnalitik === 'admin' && !_OUTLET && !_outletSaya) { btn.style.display = ''; btn2.style.display = '' } }).catch(() => {})
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pasang); else pasang()
   window._cuTest = { bacaExcel, perBulan, jenisDari, kelompokDari, tglIso }

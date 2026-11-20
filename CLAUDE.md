@@ -24,3 +24,9 @@ Di sandbox CDN Chart.js tidak termuat → skrip berhenti di bagian grafik; uji f
 - Upload boleh ZIP (JSZip). Dokumen bulan juga menyimpan `kanal` {Toko|Shopee|Tokopedia|TikTok: {omzet,qty,struk}} & `topKanal` (200 barang teratas per marketplace) dari prefiks no. pesanan (SP… Shopee, INV… Tokopedia) → tab 🛍️ Toko vs Shopee. Baris "Custom" di Top Produk bisa diklik → tab 🧵 periode sama.
 - Top Produk punya kolom Stok Toko/Gudang (jumlah SKU produk+varian dari `settings/stok_fisik`).
 
+## Multi-outlet (`js/outlet.js`) — Tahap 1
+- Tiap cabang/titik punya akun Olsera sendiri. `?outlet=ID` = mode outlet: upload "Penjualan berdasarkan SKU" disimpan `outlet_penjualan/{outlet}__{bulan}` {outlet, bulan, rows} (bukan `penjualan`), tanpa localStorage, tanpa ringkasan operator; stok HQ tidak dipakai; tab Inventori/Rekomendasi/Custom/Shopee disembunyikan.
+- Staf outlet = Portal `apps.harmoni_analitik.outlet` (dipaksa ke `?outlet=` miliknya, jadi admin untuk outletnya). Owner/Admin HQ (tanpa outlet) bisa pilih lokasi di period bar + tab 🏬 Outlet (perbandingan & kelola `outlet/{id}` {nama, tipe cabang|titik, jenis keluarga|mitra, pemilik, aktif} — tulis Owner).
+- Ringkasan `outlet_ringkas/{outlet|hq}` {b:{'Jun-26':{omzet,profit,qty,baris}}} ditulis saat upload/data cloud berubah → perbandingan antar outlet tanpa memuat data mentah (siap ribuan outlet).
+- Rules: `adminHQ()` = adminAnalitik tanpa outlet (penjualan, penjualan_custom*, penjualan_operator write); `stafOutlet()` hanya dokumen outletnya.
+- Tahap berikutnya: stok per outlet + katalog SKU HQ (Tahap 2), pesanan outlet → HQ & belanja HQ gabungan (Tahap 3), tarik otomatis via API Olsera (Tahap 4).
