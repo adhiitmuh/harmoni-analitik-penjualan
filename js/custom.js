@@ -160,7 +160,7 @@
   function terpilih() {
     const per = document.getElementById('cuPeriode').value, q = document.getElementById('cuCari').value.trim().toUpperCase(), kel = document.getElementById('cuKelompok').value
     const bln = Object.keys(DATA).sort().filter(b => per === '__top' ? DARI_TOP.includes(b) : !per || b.startsWith(per))
-    const rows = []; bln.forEach(b => (DATA[b].rows || []).forEach(r => { const g = kelompokDari(r.i, r.j); if ((!q || (r.i + ' ' + r.j).toUpperCase().includes(q)) && (!kel || g === kel)) rows.push({ ...r, b, g }) }))
+    const rows = []; bln.forEach(b => (DATA[b].rows || []).forEach(r => { const g = kelompokDari(r.i, r.j); if ((!q || (r.i + ' ' + r.j).toUpperCase().includes(q)) && (!kel || g === kel) && (!JENIS_PILIH || r.j === JENIS_PILIH)) rows.push({ ...r, b, g }) }))
     return { bln, rows }
   }
   function render() {
@@ -186,23 +186,25 @@
     const G = {}; rows.forEach(r => { const g = G[r.g] = G[r.g] || { q: 0, r: 0, n: 0 }; g.q += r.q; g.r += r.r; g.n++ })
     document.getElementById('cuKel').innerHTML = '<tr><th>Kelompok</th><th class="r">Qty</th><th class="r">Omzet</th><th class="r">Baris</th></tr>' + Object.entries(G).sort((a, b) => b[1].r - a[1].r)
       .map(([k, g]) => `<tr><td><a href="#" onclick="cuPilihKelompok(${esc(JSON.stringify(k))});return false" style="color:var(--g);font-weight:600">${esc(k)}</a></td><td class="r">${g.q.toLocaleString('id-ID')}</td><td class="r">${rp(g.r)}</td><td class="r">${g.n}</td></tr>`).join('')
-    // Per jenis
-    const J = {}; rows.forEach(r => { const j = J[r.j] = J[r.j] || { q: 0, r: 0, n: 0, g: r.g, bln: {}, contoh: r.i }; j.q += r.q; j.r += r.r; j.n++; j.bln[r.b] = (j.bln[r.b] || 0) + r.q })
-    const urut = document.getElementById('cuUrut').value
-    const jl = Object.entries(J).sort((a, b) => urut === 'qty' ? b[1].q - a[1].q : urut === 'n' ? b[1].n - a[1].n : b[1].r - a[1].r)
+    // Per jenis: pesanan (struk unik), qty, rata qty/pesanan, harga rata/pcs, laku/bln
+    const J = {}; rows.forEach(r => { const j = J[r.j] = J[r.j] || { q: 0, r: 0, n: 0, g: r.g, bln: {}, struk: new Set(), contoh: r.i }; j.q += r.q; j.r += r.r; j.n++; if (r.no) j.struk.add(r.no); j.bln[r.b] = (j.bln[r.b] || 0) + r.q })
+    const nBln = Math.max(1, bln.length), urut = document.getElementById('cuUrut').value
+    const jl = Object.entries(J).sort((a, b) => urut === 'qty' ? b[1].q - a[1].q : urut === 'n' ? b[1].struk.size - a[1].struk.size : b[1].r - a[1].r)
     window._cuJenis = jl
-    document.getElementById('cuJenisN').textContent = `${jl.length.toLocaleString('id-ID')} jenis`
-    document.getElementById('cuJenis').innerHTML = '<tr><th>#</th><th>Jenis</th><th>Kelompok</th><th class="r">Qty</th><th class="r">Omzet</th><th class="r">Baris</th><th>Bulan ramai</th></tr>' + jl.slice(0, 200).map(([k, j], i) => {
-      const ramai = Object.entries(j.bln).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([b]) => labelBln(b)).join(', ')
-      return `<tr><td>${i + 1}</td><td style="white-space:normal;min-width:220px"><b>${esc(k)}</b>${k !== j.contoh.toUpperCase() ? `<div style="font-size:.7rem;color:#64748b">cth: ${esc(j.contoh)}</div>` : ''}</td><td>${esc(j.g)}</td><td class="r">${j.q.toLocaleString('id-ID')}</td><td class="r">${rp(j.r)}</td><td class="r">${j.n}</td><td>${esc(ramai)}</td></tr>` }).join('')
-      + (jl.length > 200 ? `<tr><td colspan="7" style="color:#64748b">… ${jl.length - 200} jenis lain — persempit dengan cari / kelompok, atau unduh Excel</td></tr>` : '')
+    document.getElementById('cuJenisN').textContent = `${jl.length.toLocaleString('id-ID')} jenis · klik nama untuk rincian pesanannya`
+    document.getElementById('cuJenis').innerHTML = '<tr><th>#</th><th>Jenis</th><th>Kelompok</th><th class="r">Pesanan</th><th class="r">Qty</th><th class="r">Qty / pesanan</th><th class="r">Harga / pcs</th><th class="r">Omzet</th><th class="r">Laku / bln</th><th>Bulan ramai</th></tr>' + jl.slice(0, 200).map(([k, j], i) => {
+      const ramai = Object.entries(j.bln).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([b]) => labelBln(b)).join(', '), ps = j.struk.size || j.n
+      return `<tr><td>${i + 1}</td><td style="white-space:normal;min-width:220px"><a href="#" onclick="cuLihatJenis(${esc(JSON.stringify(k))});return false" style="color:var(--g);font-weight:700">${esc(k)}</a>${k !== j.contoh.toUpperCase() ? `<div style="font-size:.7rem;color:#64748b">cth: ${esc(j.contoh)}</div>` : ''}</td><td>${esc(j.g)}</td>
+        <td class="r">${ps.toLocaleString('id-ID')}</td><td class="r" style="font-weight:700">${j.q.toLocaleString('id-ID')}</td><td class="r">${(j.q / ps).toLocaleString('id-ID', { maximumFractionDigits: 1 })}</td><td class="r">${j.q ? rp(j.r / j.q) : '—'}</td><td class="r">${rp(j.r)}</td><td class="r">${(j.q / nBln).toLocaleString('id-ID', { maximumFractionDigits: 1 })}</td><td>${esc(ramai)}</td></tr>` }).join('')
+      + (jl.length > 200 ? `<tr><td colspan="10" style="color:#64748b">… ${jl.length - 200} jenis lain — persempit dengan cari / kelompok, atau unduh Excel</td></tr>` : '')
     renderTahun()
     // Detail
     const det = rows.slice().sort((a, b) => String(b.t).localeCompare(String(a.t)))
-    document.getElementById('cuDetailN').textContent = `${det.length.toLocaleString('id-ID')} baris`
-    document.getElementById('cuDetail').innerHTML = '<tr><th>Tanggal</th><th>Item (diketik kasir)</th><th>Jenis</th><th class="r">Qty</th><th class="r">Omzet</th><th>Kasir</th></tr>' + det.slice(0, 300).map(r =>
-      `<tr><td>${esc(r.t)}</td><td style="white-space:normal;min-width:220px">${esc(r.i)}</td><td style="white-space:normal">${esc(r.j)}</td><td class="r">${(r.q || 0).toLocaleString('id-ID')}</td><td class="r">${rp(r.r)}</td><td>${esc(r.k)}</td></tr>`).join('')
-      + (det.length > 300 ? `<tr><td colspan="6" style="color:#64748b">Menampilkan 300 dari ${det.length.toLocaleString('id-ID')} baris — unduh Excel untuk semuanya</td></tr>` : '')
+    const tq = det.reduce((t, r) => t + (r.q || 0), 0), to = det.reduce((t, r) => t + (r.r || 0), 0), tp = new Set(det.map(r => r.no)).size
+    document.getElementById('cuDetailN').innerHTML = `${JENIS_PILIH ? `<span style="background:#e7f3ef;color:#034543;border-radius:999px;padding:2px 10px;font-weight:700">Jenis: ${esc(JENIS_PILIH)} <a href="#" onclick="cuLepasJenis();return false" style="color:#b91c1c;text-decoration:none">✕</a></span> ` : ''}${det.length.toLocaleString('id-ID')} baris · ${tp.toLocaleString('id-ID')} pesanan · ${tq.toLocaleString('id-ID')} pcs · ${rp(to)}`
+    document.getElementById('cuDetail').innerHTML = '<tr><th>Tanggal</th><th>No. struk</th><th>Pelanggan</th><th>Item (diketik kasir)</th><th>Jenis</th><th class="r">Qty</th><th class="r">Harga / pcs</th><th class="r">Omzet</th><th>Kasir</th></tr>' + det.slice(0, 300).map(r =>
+      `<tr><td>${esc(r.t)}</td><td style="font-size:.7rem;color:#64748b">${esc(r.no)}</td><td>${esc(r.p || '')}</td><td style="white-space:normal;min-width:220px">${esc(r.i)}</td><td style="white-space:normal">${esc(r.j)}</td><td class="r">${(r.q || 0).toLocaleString('id-ID')}</td><td class="r">${r.q ? rp(r.r / r.q) : '—'}</td><td class="r">${rp(r.r)}</td><td>${esc(r.k)}</td></tr>`).join('')
+      + (det.length > 300 ? `<tr><td colspan="9" style="color:#64748b">Menampilkan 300 dari ${det.length.toLocaleString('id-ID')} baris — unduh Excel untuk semuanya</td></tr>` : '')
   }
   // Dari Top Produk: buka tab ini dengan periode yang sama
   window.cuBukaDariTop = async () => {
@@ -300,15 +302,19 @@
   }
   const rpJtC = n => Math.abs(n) >= 1e6 ? 'Rp ' + (n / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' jt' : rp(n)
   window.cuRenderTahun = () => renderTahun()
+  let JENIS_PILIH = ''
+  window.cuLihatJenis = j => { JENIS_PILIH = j; render(); document.getElementById('cuDetail').scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+  window.cuLepasJenis = () => { JENIS_PILIH = ''; render() }
   window.cuPilihKelompok = k => { document.getElementById('cuKelompok').value = k; render() }
   window.cuRender = () => render()
   window.cuExcel = () => {
     const { rows } = terpilih(), wb = XLSX.utils.book_new()
     const tambah = (data, n, lebar) => { const ws = XLSX.utils.json_to_sheet(data); ws['!cols'] = lebar.map(w => ({ wch: w })); XLSX.utils.book_append_sheet(wb, ws, n) }
-    const J = {}; rows.forEach(r => { const j = J[r.j] = J[r.j] || { Jenis: r.j, Kelompok: r.g, Qty: 0, Omzet: 0, Baris: 0, Contoh: r.i }; j.Qty += r.q; j.Omzet += r.r; j.Baris++ })
+    const J = {}; rows.forEach(r => { const j = J[r.j] = J[r.j] || { Jenis: r.j, Kelompok: r.g, Pesanan: new Set(), Qty: 0, Omzet: 0, Contoh: r.i }; j.Qty += r.q; j.Omzet += r.r; j.Pesanan.add(r.no) })
+    Object.values(J).forEach(j => { const n = j.Pesanan.size || 1; j.Pesanan = j.Pesanan.size; j['Qty / pesanan'] = +(j.Qty / n).toFixed(1); j['Harga / pcs'] = j.Qty ? Math.round(j.Omzet / j.Qty) : 0 })
     const Bl = {}; rows.forEach(r => { const b = Bl[r.b] = Bl[r.b] || { Bulan: labelBln(r.b), Qty: 0, Omzet: 0, Struk: new Set() }; b.Qty += r.q; b.Omzet += r.r; b.Struk.add(r.no) })
     tambah(Object.keys(Bl).sort().map(b => ({ ...Bl[b], Struk: Bl[b].Struk.size, '% omzet toko': DATA[b]?.semua?.omzet ? +(100 * Bl[b].Omzet / DATA[b].semua.omzet).toFixed(1) : '' })), 'Per Bulan', [12, 10, 14, 8, 12])
-    tambah(Object.values(J).sort((a, b) => b.Omzet - a.Omzet), 'Per Jenis', [45, 22, 10, 14, 8, 55])
+    tambah(Object.values(J).sort((a, b) => b.Omzet - a.Omzet), 'Per Jenis', [45, 22, 9, 9, 14, 55, 12, 12])
     tambah(rows.map(r => ({ Tanggal: r.t, 'No. Struk': r.no, Kasir: r.k, Pelanggan: r.p || '', 'Item (diketik kasir)': r.i, Jenis: r.j, Kelompok: r.g, Qty: r.q, Omzet: r.r })), 'Semua Item', [11, 20, 10, 20, 55, 30, 18, 7, 12])
     XLSX.writeFile(wb, 'Barang_Custom_Harmoni.xlsx')
   }
@@ -396,7 +402,7 @@
         <p style="font-size:.72rem;color:#64748b;margin-bottom:6px">Ikut filter kelompok & pencarian di atas (periode diabaikan).</p>
         <div id="cuThn"></div></div>
       <div class="card"><div class="card-title">🏆 Jenis custom <span id="cuJenisN" style="font-size:.72rem;color:#64748b;font-weight:500"></span>
-        <select id="cuUrut" onchange="cuRender()" style="font-size:.75rem;padding:4px 8px;border-radius:8px;border:1.5px solid rgba(3,69,67,.2)"><option value="omzet">Omzet terbesar</option><option value="qty">Qty terbanyak</option><option value="n">Paling sering</option></select></div>
+        <select id="cuUrut" onchange="cuRender()" style="font-size:.75rem;padding:4px 8px;border-radius:8px;border:1.5px solid rgba(3,69,67,.2)"><option value="omzet">Omzet terbesar</option><option value="qty">Qty terbanyak</option><option value="n">Pesanan terbanyak</option></select></div>
         <div class="cu-scroll"><table id="cuJenis"></table></div></div>
       <div class="card"><div class="card-title">📋 Rincian item <span id="cuDetailN" style="font-size:.72rem;color:#64748b;font-weight:500"></span></div><div class="cu-scroll"><table id="cuDetail"></table></div></div>
     </div>`
