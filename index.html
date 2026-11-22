@@ -247,7 +247,7 @@
       </div>
     </div>
     <div class="table-wrap"><table>
-      <thead><tr><th>No</th><th>Produk</th><th>Varian</th><th>Kategori</th><th class="tr">Total Omzet</th><th class="tr">Total Qty</th><th class="tr">Total Profit</th><th>Margin</th><th class="tr" title="Stok toko saat ini (upload stok Olsera / Stok Manager)">Stok Toko</th><th class="tr">Stok Gudang</th></tr></thead>
+      <thead><tr><th>No</th><th>Produk</th><th>Varian</th><th>Kategori</th><th class="tr">Total Omzet</th><th class="tr">Total Qty</th><th class="tr">Total Profit</th><th>Margin</th><th class="tr" title="Stok toko saat ini (upload stok Olsera / Stok Manager)">Stok Toko</th><th class="tr">Stok Gudang</th><th class="tr" id="thPesanTop" title="Qty yang mau dibeli — masuk Final Order, otomatis dipakai Daftar Belanja Stok Manager">🛒 Pesan</th></tr></thead>
       <tbody id="tbTop"></tbody>
     </table></div>
   </div>
@@ -1493,10 +1493,17 @@ function renderTopProduk(fidx){
 }
 // Stok toko & gudang saat ini untuk baris Top Produk (jumlah semua SKU produk+varian itu)
 function selStok(p){
-  const sk=p.skus||[]; if(!sk.length) return '<td class="tr" style="color:#94a3b8">—</td><td class="tr" style="color:#94a3b8">—</td>';
+  const sk=p.skus||[]; if(!sk.length) return '<td class="tr" style="color:#94a3b8">—</td><td class="tr" style="color:#94a3b8">—</td>'+selPesan(p);
   const t=sk.reduce((a,k)=>a+(+STOK_TOKO[k]||0),0), g=sk.reduce((a,k)=>a+(+STOK_GUDANG[k]||0),0);
   const w=v=>v<=0?'color:#b91c1c;font-weight:700':'font-weight:600';
-  return `<td class="tr" style="${w(t)}">${t.toLocaleString('id-ID')}</td><td class="tr" style="${w(g)}">${g.toLocaleString('id-ID')}</td>`;
+  return `<td class="tr" style="${w(t)}">${t.toLocaleString('id-ID')}</td><td class="tr" style="${w(g)}">${g.toLocaleString('id-ID')}</td>`+selPesan(p);
+}
+// Kolom "🛒 Pesan": qty → Final Order (settings/final_order), dipakai Daftar Belanja Stok Manager. Hanya HQ & produk 1 SKU.
+function selPesan(p){
+  if(_OUTLET||_peranAnalitik!=='admin') return '<td></td>';
+  const sk=p.skus||[]; if(sk.length!==1) return `<td class="tr" style="color:#cbd5e1" title="${sk.length?'Lebih dari 1 SKU — pesan di tab Rekomendasi':'Tanpa SKU'}">—</td>`;
+  const k=sk[0].replace(/"/g,'&quot;');
+  return `<td class="tr"><input type="number" min="0" inputmode="numeric" value="${getFinal(sk[0])}" placeholder="0" onchange="saveFinal('${k.replace(/'/g,"\\'")}',this.value);this.style.background=this.value>0?'#dcfce7':''" style="width:64px;text-align:right;padding:4px 6px;border:1.5px solid #e5e7eb;border-radius:6px;${+getFinal(sk[0])>0?'background:#dcfce7':''}"></td>`;
 }
 
 function renderRingkasan(fKatOmzet, fKatProfit, fKatHpp){
