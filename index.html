@@ -247,7 +247,7 @@
       </div>
     </div>
     <div class="table-wrap"><table>
-      <thead><tr><th>No</th><th>Produk</th><th>Varian</th><th>Kategori</th><th class="tr">Total Omzet</th><th class="tr">Total Qty</th><th class="tr">Total Profit</th><th>Margin</th><th class="tr" title="Stok toko saat ini (upload stok Olsera / Stok Manager)">Stok Toko</th><th class="tr">Stok Gudang</th><th class="tr" id="thPesanTop" title="Qty yang mau dibeli — masuk Final Order, otomatis dipakai Daftar Belanja Stok Manager">🛒 Pesan</th></tr></thead>
+      <thead><tr><th>No</th><th>Foto</th><th>Produk</th><th>Varian</th><th>Kategori</th><th class="tr">Total Omzet</th><th class="tr">Total Qty</th><th class="tr">Total Profit</th><th>Margin</th><th class="tr" title="Stok toko saat ini (upload stok Olsera / Stok Manager)">Stok Toko</th><th class="tr">Stok Gudang</th><th class="tr" id="thPesanTop" title="Qty yang mau dibeli — masuk Final Order, otomatis dipakai Daftar Belanja Stok Manager">🛒 Pesan</th></tr></thead>
       <tbody id="tbTop"></tbody>
     </table></div>
   </div>
@@ -1303,6 +1303,7 @@ function tambahBaris(tbody, jumlah){
     const html=[]; for(let i=st.shown;i<sampai;i++) html.push(st.rowFn(i));
     tbody.insertAdjacentHTML('beforeend', html.join(''));
     st.shown=sampai;
+    if(typeof fotoIsi==='function') fotoIsi(tbody);
   }
   if(st.shown<st.n) tbody.insertAdjacentHTML('beforeend', `<tr class="baris-lagi"><td colspan="${st.kolom}" style="padding:10px 12px;background:#f8fafc;position:sticky;left:0"><span style="font-size:.8rem;color:#64748b">Menampilkan ${st.shown.toLocaleString('id-ID')} dari ${st.n.toLocaleString('id-ID')} produk — gulir ke bawah untuk memuat lagi</span> <button type="button" onclick="tambahBaris(document.getElementById('${tbody.id}'),Infinity)" style="margin-left:8px;padding:4px 12px;border-radius:999px;border:1.5px solid #034543;background:#fff;color:#034543;font-weight:700;font-size:.75rem;cursor:pointer">Tampilkan semua</button></td></tr>`);
 }
@@ -1342,7 +1343,7 @@ function renderInventori(items){
     return `<tr style="opacity:${excl?'0.35':'1'}">
       <td class="tc" style="position:sticky;left:0;z-index:2;background:${rowBg};min-width:38px">${i+1}</td>
       <td style="position:sticky;left:38px;z-index:2;background:${rowBg};min-width:90px"><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${item.sku}</code></td>
-      <td style="position:sticky;left:128px;z-index:2;background:${rowBg};min-width:160px;font-weight:600">${item.produk}</td>
+      <td style="position:sticky;left:128px;z-index:2;background:${rowBg};min-width:160px;font-weight:600">${typeof fotoMini==='function'?fotoMini(item.produk,item.varian):''}${item.produk}</td>
       <td style="position:sticky;left:288px;z-index:2;background:${rowBg};min-width:100px;border-right:2px solid #e2e8f0">${item.varian}</td>
       <td><span class="badge-blue" style="font-size:.68rem">${item.kategori.replace('PERLENGKAPAN ','')}</span></td>
       <td class="tr num" style="color:#0369a1">${item.qToko>0?item.qToko.toLocaleString('id-ID'):'—'}</td>
@@ -1489,7 +1490,8 @@ function renderTopProduk(fidx){
   if(cari) show = show.filter(p=>(p.produk+' '+(p.varian||'')).toUpperCase().includes(cari));
   const jd=document.getElementById('topJudul'); if(jd) jd.textContent=`📋 ${semua?'Semua':'Top 50'} Produk${catFilter!=='all'?' · '+catFilter:''} — ${show.length} barang · ${show.reduce((t,p)=>t+p.qty,0).toLocaleString('id-ID')} pcs terjual`;
   const tb = document.getElementById('tbTop');
-  if(tb) tb.innerHTML = (semua?show:show.slice(0,50)).map((p,i)=>`<tr><td class="tc">${i+1}</td><td>${/^custom$/i.test(String(p.produk).trim())&&typeof cuBukaDariTop==='function'&&_peranAnalitik==='admin'?`<a href="#" onclick="cuBukaDariTop();return false" style="color:var(--g);font-weight:700;text-decoration:underline" title="Lihat rincian barang custom (nama diketik kasir) periode ini">${p.produk} 🧵 lihat rincian →</a>`:`<strong>${p.produk}</strong>`}</td><td>${p.varian}</td><td><span class="badge-blue" style="font-size:.68rem">${p.kategori.replace('PERLENGKAPAN ','')}</span></td><td class="tr">${fmtRp(p.omzet)}</td><td class="tr" style="font-weight:600">${p.qty.toLocaleString('id-ID')}</td><td class="tr">${fmtRp(p.profit)}</td><td>${mBar(p.margin)}</td>${selStok(p)}</tr>`).join('');
+  if(tb) tb.innerHTML = (semua?show:show.slice(0,50)).map((p,i)=>`<tr><td class="tc">${i+1}</td>${fotoSel(p.produk,p.varian)}<td>${/^custom$/i.test(String(p.produk).trim())&&typeof cuBukaDariTop==='function'&&_peranAnalitik==='admin'?`<a href="#" onclick="cuBukaDariTop();return false" style="color:var(--g);font-weight:700;text-decoration:underline" title="Lihat rincian barang custom (nama diketik kasir) periode ini">${p.produk} 🧵 lihat rincian →</a>`:`<strong>${p.produk}</strong>`}</td><td>${p.varian}</td><td><span class="badge-blue" style="font-size:.68rem">${p.kategori.replace('PERLENGKAPAN ','')}</span></td><td class="tr">${fmtRp(p.omzet)}</td><td class="tr" style="font-weight:600">${p.qty.toLocaleString('id-ID')}</td><td class="tr">${fmtRp(p.profit)}</td><td>${mBar(p.margin)}</td>${selStok(p)}</tr>`).join('');
+  if(tb&&typeof fotoIsi==='function') fotoIsi(tb);
 }
 // Stok toko & gudang saat ini untuk baris Top Produk (jumlah semua SKU produk+varian itu)
 function selStok(p){
@@ -1837,7 +1839,7 @@ function renderStok(data){
     return `<tr>
       <td class="tc" style="position:sticky;left:0;z-index:2;background:${rowBg};min-width:38px">${i+1}</td>
       <td style="position:sticky;left:38px;z-index:2;background:${rowBg};min-width:90px"><code style="font-size:.75rem;background:#f1f5f9;padding:1px 4px;border-radius:3px">${s.sku}</code></td>
-      <td style="position:sticky;left:128px;z-index:2;background:${rowBg};min-width:160px;font-weight:600"><strong>${s.produk}</strong></td>
+      <td style="position:sticky;left:128px;z-index:2;background:${rowBg};min-width:160px;font-weight:600">${typeof fotoMini==='function'?fotoMini(s.produk,s.varian):''}<strong>${s.produk}</strong></td>
       <td style="position:sticky;left:288px;z-index:2;background:${rowBg};min-width:100px;border-right:2px solid #e2e8f0">${s.varian}</td>
       <td class="sc-skat"><span class="badge-blue" style="font-size:.68rem">${s.kategori.replace('PERLENGKAPAN ','')}</span></td>
       <td class="tr num sc-savg">${s.avg_per_bulan}</td>
@@ -2268,6 +2270,7 @@ function applyRole(role) {
   if (navMasalah) navMasalah.classList.add('active');
 }
 </script>
+<script src="js/foto-produk.js?v=20261127a"></script>
 <script src="js/custom.js?v=20261122b"></script>
 <script src="js/outlet.js?v=20261120b"></script>
 <script src="js/outlet-stok.js?v=20261120b"></script>
