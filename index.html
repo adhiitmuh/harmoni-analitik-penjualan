@@ -243,6 +243,10 @@
           <option value="qty">Urutkan: Qty Terjual</option>
           <option value="profit">Urutkan: Profit</option>
           <option value="margin">Urutkan: Margin</option>
+          <option value="stok_asc">Stok: paling sedikit / kosong dulu</option>
+          <option value="stok_desc">Stok: paling banyak dulu</option>
+          <option value="toko_asc">Stok Toko: paling sedikit dulu</option>
+          <option value="gudang_asc">Stok Gudang: paling sedikit dulu</option>
         </select>
       </div>
     </div>
@@ -1485,7 +1489,11 @@ function renderTopProduk(fidx){
   const sortBy = document.getElementById('topSortFilter')?.value||'omzet';
   const cari = (document.getElementById('topCari')?.value||'').trim().toUpperCase();
   const semua = document.getElementById('topJumlah')?.value==='all';
-  let show = [...prodList].sort((a,b)=>(b[sortBy]||0)-(a[sortBy]||0));
+  // Urut stok: jumlah semua SKU produk+varian di toko / gudang (barang tanpa data stok ditaruh paling bawah)
+  const stk=p=>{const sk=p.skus||[]; if(!sk.length) return null; const t=sk.reduce((x,k)=>x+(+STOK_TOKO[k]||0),0), g=sk.reduce((x,k)=>x+(+STOK_GUDANG[k]||0),0); return {t,g,s:t+g}};
+  const urutStok={stok_asc:[x=>x.s,1],stok_desc:[x=>x.s,-1],toko_asc:[x=>x.t,1],gudang_asc:[x=>x.g,1]}[sortBy];
+  let show = urutStok ? [...prodList].sort((a,b)=>{const A=stk(a),B=stk(b); if(!A&&!B) return b.qty-a.qty; if(!A) return 1; if(!B) return -1; return (urutStok[0](A)-urutStok[0](B))*urutStok[1] || b.qty-a.qty})
+    : [...prodList].sort((a,b)=>(b[sortBy]||0)-(a[sortBy]||0));
   if(catFilter!=='all') show = show.filter(p=>p.kategori===catFilter);
   if(cari) show = show.filter(p=>(p.produk+' '+(p.varian||'')).toUpperCase().includes(cari));
   const jd=document.getElementById('topJudul'); if(jd) jd.textContent=`📋 ${semua?'Semua':'Top 50'} Produk${catFilter!=='all'?' · '+catFilter:''} — ${show.length} barang · ${show.reduce((t,p)=>t+p.qty,0).toLocaleString('id-ID')} pcs terjual`;
