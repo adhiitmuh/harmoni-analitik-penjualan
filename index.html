@@ -1466,7 +1466,19 @@ const cDivisiLine = new Chart(document.getElementById('cDivisiLine'),{type:'line
 let cTopOmzet = new Chart(document.getElementById('cTopOmzet'),{type:'bar',data:{labels:[],datasets:[{label:'Omzet',data:[],backgroundColor:'#034543',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtM(c.raw)}}},scales:{x:{ticks:{callback:v=>fmtM(v)},grid:{color:'#f1f5f9'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
 let cTopMargin = new Chart(document.getElementById('cTopMargin'),{type:'bar',data:{labels:[],datasets:[{label:'Margin%',data:[],backgroundColor:'#1a8b88',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.raw.toFixed(1)+'%'}}},scales:{x:{ticks:{callback:v=>v+'%'},max:110,grid:{color:'#f1f5f9'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
 
+// Laku per tahun (semua bulan data, tidak ikut filter periode) — kolom "Laku 2025", "Laku 2026", …
+let TAHUN_TOP=[];
+function lakuTahun(p){ if(p._lt) return p._lt; const o={}; (p.monthly_qty||[]).forEach((q,i)=>{ const b=BULAN[i]; if(!b||!q) return; const y='20'+String(b).slice(-2); o[y]=(o[y]||0)+q }); return p._lt=o }
+function aturKolomTahun(){
+  TAHUN_TOP=[...new Set((BULAN||[]).map(b=>'20'+String(b).slice(-2)))].filter(y=>/^20\d\d$/.test(y)).sort();
+  const tr=document.querySelector('#tbTop')?.closest('table')?.querySelector('thead tr'); if(!tr) return;
+  tr.querySelectorAll('.th-tahun').forEach(x=>x.remove());
+  const qtyTh=[...tr.children].find(th=>/Total Qty/i.test(th.textContent)); if(!qtyTh) return;
+  TAHUN_TOP.slice().reverse().forEach(y=>qtyTh.insertAdjacentHTML('afterend',`<th class="tr th-tahun" title="Qty terjual sepanjang tahun ${y} (tidak ikut filter periode)">Laku ${y}</th>`));
+  const sel=document.getElementById('topSortFilter'); if(sel){ sel.querySelectorAll('.opt-tahun').forEach(o=>o.remove()); TAHUN_TOP.forEach(y=>sel.insertAdjacentHTML('beforeend',`<option class="opt-tahun" value="tahun_${y}">Urutkan: Laku ${y} terbanyak</option><option class="opt-tahun" value="tahunasc_${y}">Urutkan: Laku ${y} tersedikit</option>`)) }
+}
 function renderTopProduk(fidx){
+  if(TAHUN_TOP.join()!==[...new Set((BULAN||[]).map(b=>'20'+String(b).slice(-2)))].filter(y=>/^20\d\d$/.test(y)).sort().join()||!document.querySelector('.th-tahun')){ const v=document.getElementById('topSortFilter')?.value; aturKolomTahun(); if(v&&document.getElementById('topSortFilter')) document.getElementById('topSortFilter').value=v; }
   const prodList = TOP_PRODUK.map(p=>{
     const omzet  = fidx.reduce((s,i)=>s+(p.monthly_omzet[i]||0),0);
     const qty    = fidx.reduce((s,i)=>s+(p.monthly_qty[i]||0),0);
@@ -1492,13 +1504,15 @@ function renderTopProduk(fidx){
   // Urut stok: jumlah semua SKU produk+varian di toko / gudang (barang tanpa data stok ditaruh paling bawah)
   const stk=p=>{const sk=p.skus||[]; if(!sk.length) return null; const t=sk.reduce((x,k)=>x+(+STOK_TOKO[k]||0),0), g=sk.reduce((x,k)=>x+(+STOK_GUDANG[k]||0),0); return {t,g,s:t+g}};
   const urutStok={stok_asc:[x=>x.s,1],stok_desc:[x=>x.s,-1],toko_asc:[x=>x.t,1],gudang_asc:[x=>x.g,1]}[sortBy];
-  let show = urutStok ? [...prodList].sort((a,b)=>{const A=stk(a),B=stk(b); if(!A&&!B) return b.qty-a.qty; if(!A) return 1; if(!B) return -1; return (urutStok[0](A)-urutStok[0](B))*urutStok[1] || b.qty-a.qty})
+ const mTahun=String(sortBy).match(/^tahun(asc)?_(\d{4})$/);
+  let show = mTahun ? [...prodList].sort((a,b)=>((lakuTahun(a)[mTahun[2]]||0)-(lakuTahun(b)[mTahun[2]]||0))*(mTahun[1]?1:-1) || b.qty-a.qty)
+    : urutStok ? [...prodList].sort((a,b)=>{const A=stk(a),B=stk(b); if(!A&&!B) return b.qty-a.qty; if(!A) return 1; if(!B) return -1; return (urutStok[0](A)-urutStok[0](B))*urutStok[1] || b.qty-a.qty})
     : [...prodList].sort((a,b)=>(b[sortBy]||0)-(a[sortBy]||0));
   if(catFilter!=='all') show = show.filter(p=>p.kategori===catFilter);
   if(cari) show = show.filter(p=>(p.produk+' '+(p.varian||'')).toUpperCase().includes(cari));
   const jd=document.getElementById('topJudul'); if(jd) jd.textContent=`📋 ${semua?'Semua':'Top 50'} Produk${catFilter!=='all'?' · '+catFilter:''} — ${show.length} barang · ${show.reduce((t,p)=>t+p.qty,0).toLocaleString('id-ID')} pcs terjual`;
   const tb = document.getElementById('tbTop');
-  if(tb) tb.innerHTML = (semua?show:show.slice(0,50)).map((p,i)=>`<tr><td class="tc">${i+1}</td>${fotoSel(p.produk,p.varian)}<td>${/^custom$/i.test(String(p.produk).trim())&&typeof cuBukaDariTop==='function'&&_peranAnalitik==='admin'?`<a href="#" onclick="cuBukaDariTop();return false" style="color:var(--g);font-weight:700;text-decoration:underline" title="Lihat rincian barang custom (nama diketik kasir) periode ini">${p.produk} 🧵 lihat rincian →</a>`:`<strong>${p.produk}</strong>`}</td><td>${p.varian}</td><td><span class="badge-blue" style="font-size:.68rem">${p.kategori.replace('PERLENGKAPAN ','')}</span></td><td class="tr">${fmtRp(p.omzet)}</td><td class="tr" style="font-weight:600">${p.qty.toLocaleString('id-ID')}</td><td class="tr">${fmtRp(p.profit)}</td><td>${mBar(p.margin)}</td>${selStok(p)}</tr>`).join('');
+  if(tb) tb.innerHTML = (semua?show:show.slice(0,50)).map((p,i)=>`<tr><td class="tc">${i+1}</td>${fotoSel(p.produk,p.varian)}<td>${/^custom$/i.test(String(p.produk).trim())&&typeof cuBukaDariTop==='function'&&_peranAnalitik==='admin'?`<a href="#" onclick="cuBukaDariTop();return false" style="color:var(--g);font-weight:700;text-decoration:underline" title="Lihat rincian barang custom (nama diketik kasir) periode ini">${p.produk} 🧵 lihat rincian →</a>`:`<strong>${p.produk}</strong>`}</td><td>${p.varian}</td><td><span class="badge-blue" style="font-size:.68rem">${p.kategori.replace('PERLENGKAPAN ','')}</span></td><td class="tr">${fmtRp(p.omzet)}</td><td class="tr" style="font-weight:600">${p.qty.toLocaleString('id-ID')}</td>${TAHUN_TOP.map(y=>`<td class="tr" style="${(lakuTahun(p)[y]||0)?'':'color:#cbd5e1'}">${(lakuTahun(p)[y]||0).toLocaleString('id-ID')}</td>`).join('')}<td class="tr">${fmtRp(p.profit)}</td><td>${mBar(p.margin)}</td>${selStok(p)}</tr>`).join('');
   if(tb&&typeof fotoIsi==='function') fotoIsi(tb);
 }
 // Stok toko & gudang saat ini untuk baris Top Produk (jumlah semua SKU produk+varian itu)
